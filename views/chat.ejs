@@ -17,6 +17,7 @@
       --wikipedia-red: #cc0000;
       --wikipedia-green: #00af89;
       --wikipedia-background: #f8f9fa;
+      --notification-red: #ff5252;
     }
 
     /* Reset & Base Styles */
@@ -45,6 +46,7 @@
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      position: relative;
     }
     
     .header-title {
@@ -96,6 +98,28 @@
     
     .delete-all:hover {
       background: #ffeeee;
+    }
+
+    /* Notification badge */
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: var(--notification-red);
+      color: white;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .notification-badge.show {
+      opacity: 1;
     }
 
     /* Main chat container */
@@ -285,6 +309,62 @@
       background: var(--wikipedia-dark-blue);
     }
 
+    /* Notification toast */
+    .notification-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      border: 1px solid var(--wikipedia-border);
+      border-radius: 3px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 320px;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    
+    .notification-toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    .notification-icon {
+      color: var(--wikipedia-blue);
+      font-size: 18px;
+    }
+    
+    .notification-content {
+      flex: 1;
+    }
+    
+    .notification-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .notification-message {
+      font-size: 14px;
+      color: var(--wikipedia-text);
+    }
+    
+    .notification-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--wikipedia-border);
+      font-size: 16px;
+    }
+    
+    .notification-close:hover {
+      color: var(--wikipedia-text);
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .chat-main {
@@ -307,6 +387,12 @@
         flex-wrap: wrap;
         justify-content: flex-end;
       }
+      
+      .notification-toast {
+        left: 20px;
+        right: 20px;
+        max-width: none;
+      }
     }
 
     /* Signature style for usernames */
@@ -324,8 +410,12 @@
       <div class="header-title">
         <i class="fas fa-comments"></i>
         <span>Chat discussion: <strong><%= username %></strong></span>
+        <span class="notification-badge" id="notificationBadge">0</span>
       </div>
       <div class="header-actions">
+        <button id="notificationToggle" class="small-btn">
+          <i class="fas fa-bell"></i> Notifications
+        </button>
         <button id="deleteAllBtn" class="delete-all">
           <i class="fas fa-trash-alt"></i> Purge
         </button>
@@ -355,6 +445,20 @@
     </form>
   </div>
 
+  <!-- Notification Toast -->
+  <div class="notification-toast" id="notificationToast">
+    <div class="notification-icon">
+      <i class="fas fa-bell"></i>
+    </div>
+    <div class="notification-content">
+      <div class="notification-title" id="toastTitle">New Message</div>
+      <div class="notification-message" id="toastMessage"></div>
+    </div>
+    <button class="notification-close" id="toastClose">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
@@ -364,11 +468,108 @@
   const form = document.getElementById('chatForm');
   const input = document.getElementById('msg');
   const deleteAllBtn = document.getElementById('deleteAllBtn');
+  const notificationBadge = document.getElementById('notificationBadge');
+  const notificationToggle = document.getElementById('notificationToggle');
+  const notificationToast = document.getElementById('notificationToast');
+  const toastTitle = document.getElementById('toastTitle');
+  const toastMessage = document.getElementById('toastMessage');
+  const toastClose = document.getElementById('toastClose');
+  
+  let notificationCount = 0;
+  let notificationPermission = false;
+  let isWindowFocused = true;
+
+  // Check if browser supports notifications
+  const notificationSupported = 'Notification' in window;
+
+  // Request notification permission
+  function requestNotificationPermission() {
+    if (notificationSupported) {
+      Notification.requestPermission().then(permission => {
+        notificationPermission = permission === 'granted';
+        updateNotificationToggle();
+      });
+    }
+  }
+
+  // Update notification toggle button text
+  function updateNotificationToggle() {
+    if (notificationSupported) {
+      const icon = notificationPermission ? 'fa-bell' : 'fa-bell-slash';
+      notificationToggle.innerHTML = `<i class="fas ${icon}"></i> ${notificationPermission ? 'Disable' : 'Enable'} Notifications`;
+    } else {
+      notificationToggle.style.display = 'none';
+    }
+  }
+
+  // Show browser notification
+  function showBrowserNotification(title, message) {
+    if (notificationPermission && !isWindowFocused) {
+      const notification = new Notification(title, {
+        body: message,
+        icon: '/favicon.ico'
+      });
+      
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+      
+      setTimeout(() => notification.close(), 5000);
+    }
+  }
+
+  // Show toast notification
+  function showToastNotification(title, message) {
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+    notificationToast.classList.add('show');
+    
+    setTimeout(() => {
+      notificationToast.classList.remove('show');
+    }, 5000);
+  }
+
+  // Update notification badge
+  function updateNotificationBadge() {
+    if (notificationCount > 0) {
+      notificationBadge.textContent = notificationCount;
+      notificationBadge.classList.add('show');
+    } else {
+      notificationBadge.classList.remove('show');
+    }
+  }
 
   // Format time function (Wikipedia style) - Time only, no date
   function formatTime(date) {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
+
+  // Window focus/blur events
+  window.addEventListener('focus', () => {
+    isWindowFocused = true;
+    notificationCount = 0;
+    updateNotificationBadge();
+  });
+
+  window.addEventListener('blur', () => {
+    isWindowFocused = false;
+  });
+
+  // Notification toggle click
+  notificationToggle.addEventListener('click', () => {
+    if (notificationPermission) {
+      notificationPermission = false;
+    } else {
+      requestNotificationPermission();
+    }
+    updateNotificationToggle();
+  });
+
+  // Close toast
+  toastClose.addEventListener('click', () => {
+    notificationToast.classList.remove('show');
+  });
 
   // join
   socket.emit('joinChat', username);
@@ -379,7 +580,24 @@
   });
 
   // new incoming
-  socket.on('newMessage', m => appendMessage(m));
+  socket.on('newMessage', m => {
+    appendMessage(m);
+    
+    // Show notification if message is from another user
+    if (m.username !== username) {
+      notificationCount++;
+      updateNotificationBadge();
+      
+      const title = 'New Message';
+      const message = `${m.username}: ${m.text}`;
+      
+      // Show toast notification
+      showToastNotification(title, message);
+      
+      // Show browser notification if allowed
+      showBrowserNotification(title, message);
+    }
+  });
 
   // message deleted
   socket.on('messageDeleted', id => {
@@ -464,6 +682,14 @@
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; 
     }); 
   }
+
+  // Initialize notification system
+  document.addEventListener('DOMContentLoaded', () => {
+    if (notificationSupported) {
+      notificationPermission = Notification.permission === 'granted';
+    }
+    updateNotificationToggle();
+  });
 </script>
 </body>
 </html>
