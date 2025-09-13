@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://expense-tracker-u6h1.onrender.com/sitemap.xml
