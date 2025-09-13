@@ -1,0 +1,85 @@
+<h2 style="text-align:center; color:#2d3748; margin-bottom:20px;">📒 My Expenses</h2>
+
+<div style="max-width:750px; margin:0 auto; background:#fff; padding:25px; border-radius:16px; box-shadow:0 6px 15px rgba(0,0,0,0.1);">
+
+  <!-- Add Expense Form -->
+  <form action="/expenses/add" method="POST" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:25px;">
+    <input 
+      type="text" 
+      name="title" 
+      placeholder="Title" 
+      required 
+      style="flex:2; padding:10px; border:1px solid #ddd; border-radius:8px;"
+    />
+    <input 
+      type="number" 
+      name="amount" 
+      placeholder="Amount" 
+      required 
+      style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px;"
+    />
+    <input 
+      type="text" 
+      name="category" 
+      placeholder="Category" 
+      required 
+      style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px;"
+    />
+    <button 
+      type="submit" 
+      style="padding:10px 16px; background:#2d6a4f; color:#fff; border:none; border-radius:8px; cursor:pointer; transition:0.3s;"
+      onmouseover="this.style.background='#1b4332'" 
+      onmouseout="this.style.background='#2d6a4f'">
+      ➕ Add
+    </button>
+  </form>
+
+  <!-- Expense List -->
+  <ul style="list-style:none; padding:0; margin:0;">
+    <% if (expenses.length === 0) { %>
+      <li style="padding:15px; text-align:center; color:#777; font-style:italic;">
+        No expenses yet 🚫
+      </li>
+    <% } else { %>
+      <% expenses.forEach(exp => { %>
+        <li style="padding:12px 16px; margin-bottom:12px; background:#f9fafb; border:1px solid #eee; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+          
+          <div>
+            <strong><%= exp.title %></strong> - ₹<%= exp.amount %>
+            <span style="display:inline-block; background:#e0e0e0; color:#333; padding:2px 8px; border-radius:6px; font-size:0.85rem; margin-left:8px;">
+              <%= exp.category %>
+            </span><br>
+            <small style="color:#555;"><%= exp.date.toDateString() %></small>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:8px;">
+            <a href="/expenses/edit/<%= exp._id %>" 
+               style="padding:6px 12px; background:#f4a261; color:#fff; text-decoration:none; border-radius:6px; font-size:0.9rem; transition:0.3s;"
+               onmouseover="this.style.background='#e76f51'" 
+               onmouseout="this.style.background='#f4a261'">
+               ✏️ Edit
+            </a>
+            <a href="/expenses/delete/<%= exp._id %>" 
+               onclick="return confirm('Are you sure?')" 
+               style="padding:6px 12px; background:#e63946; color:#fff; text-decoration:none; border-radius:6px; font-size:0.9rem; transition:0.3s;"
+               onmouseover="this.style.background='#b5171d'" 
+               onmouseout="this.style.background='#e63946'">
+               ❌ Delete
+            </a>
+          </div>
+
+        </li>
+      <% }) %>
+    <% } %>
+  </ul>
+
+  <!-- Back Button -->
+  <div style="text-align:center; margin-top:20px;">
+    <a href="/dashboard" 
+       style="display:inline-block; padding:10px 16px; background:#3182ce; color:#fff; text-decoration:none; border-radius:8px; transition:0.3s;"
+       onmouseover="this.style.background='#1e4e8c'" 
+       onmouseout="this.style.background='#3182ce'">
+       ⬅ Back to Dashboard
+    </a>
+  </div>
+</div>

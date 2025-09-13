@@ -1,0 +1,41 @@
+<h2 style="text-align:center; color:#2d3748; margin-bottom:20px;">🔑 Login</h2>
+
+<div style="max-width:400px; margin:0 auto; background:#fff; padding:30px; border-radius:16px; box-shadow:0 6px 15px rgba(0,0,0,0.1);">
+
+  <!-- Login Form -->
+  <form action="/login" method="POST" style="display:flex; flex-direction:column; gap:15px;">
+    <input 
+      type="email" 
+      name="email" 
+      placeholder="Email" 
+      required 
+      style="padding:12px; border:1px solid #ddd; border-radius:8px; font-size:1rem;"
+    />
+
+    <input 
+      type="password" 
+      name="password" 
+      placeholder="Password" 
+      required 
+      style="padding:12px; border:1px solid #ddd; border-radius:8px; font-size:1rem;"
+    />
+
+    <button 
+      type="submit" 
+      style="padding:12px; background:#2d6a4f; color:#fff; border:none; border-radius:8px; font-size:1rem; cursor:pointer; transition:0.3s;"
+      onmouseover="this.style.background='#1b4332'" 
+      onmouseout="this.style.background='#2d6a4f'">
+      🔓 Login
+    </button>
+  </form>
+
+  <!-- Register Link -->
+  <p style="text-align:center; margin-top:15px; font-size:0.95rem; color:#555;">
+    Don't have an account? 
+    <a href="/register" style="color:#3182ce; text-decoration:none; font-weight:500;"
+       onmouseover="this.style.textDecoration='underline'" 
+       onmouseout="this.style.textDecoration='none'">
+      Register here
+    </a>
+  </p>
+</div>

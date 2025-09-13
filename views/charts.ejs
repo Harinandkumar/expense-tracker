@@ -1,0 +1,47 @@
+<h2>Expense Charts</h2>
+<canvas id="categoryChart" width="400" height="200"></canvas>
+<canvas id="monthlyChart" width="400" height="200"></canvas>
+
+<a href="/dashboard">Back</a>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // ✅ Safely inject server-side data as string and parse in JS
+  const categoryTotalsData = JSON.parse('<%- JSON.stringify(categoryTotals || {}) %>');
+  const monthlyTotalsData = JSON.parse('<%- JSON.stringify(monthlyTotals || {}) %>');
+
+  const categoryLabels = Object.keys(categoryTotalsData);
+  const categoryValues = Object.values(categoryTotalsData);
+
+  const monthlyLabels = Object.keys(monthlyTotalsData);
+  const monthlyValues = Object.values(monthlyTotalsData);
+
+  // Category Pie Chart
+  const categoryData = {
+    labels: categoryLabels,
+    datasets: [{
+      label: 'Category Expenses',
+      data: categoryValues,
+      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8AFF33','#FF33F6']
+    }]
+  };
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'pie',
+    data: categoryData
+  });
+
+  // Monthly Bar Chart
+  const monthlyData = {
+    labels: monthlyLabels,
+    datasets: [{
+      label: 'Monthly Expenses',
+      data: monthlyValues,
+      backgroundColor: '#36A2EB'
+    }]
+  };
+  new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: monthlyData,
+    options: { scales: { y: { beginAtZero: true } } }
+  });
+</script>

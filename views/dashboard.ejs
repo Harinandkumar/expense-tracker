@@ -1,0 +1,34 @@
+<h2 style="text-align:center; color:#2d3748; margin-bottom:25px;">🏠 Welcome to your Dashboard</h2>
+
+<div style="max-width:600px; margin:0 auto; background:#fff; padding:30px; border-radius:16px; box-shadow:0 6px 15px rgba(0,0,0,0.1); text-align:center;">
+
+  <p style="font-size:1.1rem; color:#555; margin-bottom:25px;">
+    Select an option to continue:
+  </p>
+
+  <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
+    <!-- View Expenses -->
+    <a href="/expenses/list" 
+       style="padding:12px 20px; background:#2d6a4f; color:#fff; text-decoration:none; border-radius:10px; font-weight:500; transition:0.3s;"
+       onmouseover="this.style.background='#1b4332'" 
+       onmouseout="this.style.background='#2d6a4f'">
+       💰 View My Expenses
+    </a>
+
+    <!-- View Charts -->
+    <a href="/expenses/charts" 
+       style="padding:12px 20px; background:#f4a261; color:#fff; text-decoration:none; border-radius:10px; font-weight:500; transition:0.3s;"
+       onmouseover="this.style.background='#e76f51'" 
+       onmouseout="this.style.background='#f4a261'">
+       📊 View Charts
+    </a>
+
+    <!-- Logout -->
+    <a href="/logout" 
+       style="padding:12px 20px; background:#e63946; color:#fff; text-decoration:none; border-radius:10px; font-weight:500; transition:0.3s;"
+       onmouseover="this.style.background='#b5171d'" 
+       onmouseout="this.style.background='#e63946'">
+       🚪 Logout
+    </a>
+  </div>
+</div>
