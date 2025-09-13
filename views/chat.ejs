@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    #messages { list-style: none; padding: 0; max-height: 300px; overflow-y: scroll; border: 1px solid #ccc; margin-bottom: 10px; }
+    #messages li { padding: 5px; border-bottom: 1px solid #eee; }
+  </style>
+</head>
+<body>
+  <h1>Chat Room</h1>
+  <ul id="messages"></ul>
+  <form id="chatForm">
+    <input id="msg" autocomplete="off" placeholder="Type a message..." required />
+    <button>Send</button>
+  </form>
+  <p><a href="/dashboard">Back to Dashboard</a></p>
+
+  <script>
+    const socket = io();
+    const username = "<%= username %>";
+    const messages = document.getElementById('messages');
+    const form = document.getElementById('chatForm');
+    const input = document.getElementById('msg');
+
+    socket.on('loadMessages', msgs => {
+      msgs.forEach(m => addMessage(m));
+    });
+
+    socket.on('newMessage', m => addMessage(m));
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if(input.value.trim()){
+        socket.emit('chatMessage', { username, message: input.value });
+        input.value = '';
+      }
+    });
+
+    function addMessage(m){
+      const li = document.createElement('li');
+      li.textContent = m.username + ': ' + m.message;
+      messages.appendChild(li);
+      messages.scrollTop = messages.scrollHeight;
+    }
+  </script>
+</body>
+</html>

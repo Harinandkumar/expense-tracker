@@ -1,34 +1,56 @@
-<h2 style="text-align:center; color:#2d3748; margin-bottom:25px;">🏠 Welcome to your Dashboard</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1>Welcome, <%= username %></h1>
+  <h2>Add Expense</h2>
+  <form action="/expenses/add" method="POST">
+    <input type="text" name="title" placeholder="Title" required />
+    <input type="number" step="0.01" name="amount" placeholder="Amount" required />
+    <input type="text" name="category" placeholder="Category" required />
+    <input type="date" name="date" required />
+    <button type="submit">Add</button>
+  </form>
 
-<div style="max-width:600px; margin:0 auto; background:#fff; padding:30px; border-radius:16px; box-shadow:0 6px 15px rgba(0,0,0,0.1); text-align:center;">
+  <h2>Your Expenses</h2>
+  <table border="1">
+    <tr>
+      <th>Title</th>
+      <th>Amount</th>
+      <th>Category</th>
+      <th>Date</th>
+      <th>Action</th>
+    </tr>
+    <% expenses.forEach(exp => { %>
+      <tr>
+        <td><%= exp.title %></td>
+        <td><%= exp.amount %></td>
+        <td><%= exp.category %></td>
+        <td><%= exp.date.toISOString().slice(0,10) %></td>
+        <td><a href="/expenses/delete/<%= exp._id %>">Delete</a></td>
+      </tr>
+    <% }) %>
+  </table>
 
-  <p style="font-size:1.1rem; color:#555; margin-bottom:25px;">
-    Select an option to continue:
-  </p>
+  <h2>Category Totals</h2>
+  <ul>
+    <% for(let cat in categoryTotals){ %>
+      <li><%= cat %>: <%= categoryTotals[cat] %></li>
+    <% } %>
+  </ul>
 
-  <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">
-    <!-- View Expenses -->
-    <a href="/expenses/list" 
-       style="padding:12px 20px; background:#2d6a4f; color:#fff; text-decoration:none; border-radius:10px; font-weight:500; transition:0.3s;"
-       onmouseover="this.style.background='#1b4332'" 
-       onmouseout="this.style.background='#2d6a4f'">
-       💰 View My Expenses
-    </a>
+  <h2>Monthly Totals</h2>
+  <ul>
+    <% for(let month in monthlyTotals){ %>
+      <li><%= month %>: <%= monthlyTotals[month] %></li>
+    <% } %>
+  </ul>
 
-    <!-- View Charts -->
-    <a href="/expenses/charts" 
-       style="padding:12px 20px; background:#f4a261; color:#fff; text-decoration:none; border-radius:10px; font-weight:500; transition:0.3s;"
-       onmouseover="this.style.background='#e76f51'" 
-       onmouseout="this.style.background='#f4a261'">
-       📊 View Charts
-    </a>
-
-    <!-- Logout -->
-    <a href="/logout" 
-       style="padding:12px 20px; background:#e63946; color:#fff; text-decoration:none; border-radius:10px; font-weight:500; transition:0.3s;"
-       onmouseover="this.style.background='#b5171d'" 
-       onmouseout="this.style.background='#e63946'">
-       🚪 Logout
-    </a>
-  </div>
-</div>
+  <p><a href="/chat">Go to Chat</a></p>
+  <p><a href="/login" onclick="fetch('/logout')">Logout</a></p>
+</body>
+</html>
