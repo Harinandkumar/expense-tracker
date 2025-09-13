@@ -1,50 +1,105 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8"/>
   <title>Chat</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    #messages { list-style: none; padding: 0; max-height: 300px; overflow-y: scroll; border: 1px solid #ccc; margin-bottom: 10px; }
-    #messages li { padding: 5px; border-bottom: 1px solid #eee; }
-  </style>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>Chat Room</h1>
-  <ul id="messages"></ul>
-  <form id="chatForm">
-    <input id="msg" autocomplete="off" placeholder="Type a message..." required />
-    <button>Send</button>
-  </form>
-  <p><a href="/dashboard">Back to Dashboard</a></p>
+  <div class="chat-container">
+    <div class="chat-header">
+      <div>Chat Room - <strong><%= username %></strong></div>
+      <div>
+        <button id="deleteAllBtn" class="delete-all">🗑 Delete All</button>
+        <a href="/dashboard" class="small-btn">Dashboard</a>
+        <a href="/logout" class="small-btn">Logout</a>
+      </div>
+    </div>
 
-  <script>
-    const socket = io();
-    const username = "<%= username %>";
-    const messages = document.getElementById('messages');
-    const form = document.getElementById('chatForm');
-    const input = document.getElementById('msg');
+    <div class="chat-main">
+      <div class="chat-messages" id="messages"></div>
 
-    socket.on('loadMessages', msgs => {
-      msgs.forEach(m => addMessage(m));
+      <div class="chat-users">
+        <h3>Online</h3>
+        <ul id="users"></ul>
+      </div>
+    </div>
+
+    <form id="chatForm" class="chat-form">
+      <input id="msg" autocomplete="off" placeholder="Type a message..." />
+      <button>Send</button>
+    </form>
+  </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const username = "<%= username %>";
+  const messages = document.getElementById('messages');
+  const usersList = document.getElementById('users');
+  const form = document.getElementById('chatForm');
+  const input = document.getElementById('msg');
+  const deleteAllBtn = document.getElementById('deleteAllBtn');
+
+  // join
+  socket.emit('joinChat', username);
+
+  // load old messages
+  socket.on('loadMessages', msgs => {
+    msgs.forEach(m => appendMessage(m));
+  });
+
+  // new incoming
+  socket.on('newMessage', m => appendMessage(m));
+
+  // message deleted
+  socket.on('messageDeleted', id => {
+    const el = document.getElementById(id);
+    if(el) el.remove();
+  });
+
+  // all messages deleted
+  socket.on('allMessagesDeleted', () => messages.innerHTML = '');
+
+  // users update
+  socket.on('updateUsers', users => {
+    usersList.innerHTML = '';
+    users.forEach(u => {
+      const li = document.createElement('li'); li.textContent = u;
+      usersList.appendChild(li);
     });
+  });
 
-    socket.on('newMessage', m => addMessage(m));
-
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      if(input.value.trim()){
-        socket.emit('chatMessage', { username, message: input.value });
-        input.value = '';
-      }
-    });
-
-    function addMessage(m){
-      const li = document.createElement('li');
-      li.textContent = m.username + ': ' + m.message;
-      messages.appendChild(li);
-      messages.scrollTop = messages.scrollHeight;
+  // send
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if(input.value.trim()){
+      socket.emit('chatMessage', { username, text: input.value });
+      input.value = '';
     }
-  </script>
+  });
+
+  // delete all
+  deleteAllBtn.addEventListener('click', () => {
+    if(confirm('Delete all messages?')) socket.emit('deleteAllMessages');
+  });
+
+  // helper to add message DOM
+  function appendMessage(m){
+    const div = document.createElement('div');
+    div.className = 'chat-bubble ' + (m.username === username ? 'me' : 'other');
+    div.id = m._id;
+    div.innerHTML = `<b>${escapeHtml(m.username)}:</b> ${escapeHtml(m.text)} <button class="delBtn" onclick="deleteMsg('${m._id}')">❌</button>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  window.deleteMsg = function(id){
+    if(confirm('Delete this message?')) socket.emit('deleteMessage', id);
+  };
+
+  // safe simple escape
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+</script>
 </body>
 </html>

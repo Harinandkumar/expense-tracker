@@ -1,56 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8"/>
   <title>Dashboard</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>Welcome, <%= username %></h1>
-  <h2>Add Expense</h2>
-  <form action="/expenses/add" method="POST">
-    <input type="text" name="title" placeholder="Title" required />
-    <input type="number" step="0.01" name="amount" placeholder="Amount" required />
-    <input type="text" name="category" placeholder="Category" required />
-    <input type="date" name="date" required />
-    <button type="submit">Add</button>
-  </form>
+  <header>
+    <h1>Welcome, <%= username %></h1>
+    <a href="/chat" class="small-btn">Chat</a>
+    <a href="/logout" class="small-btn">Logout</a>
+  </header>
 
-  <h2>Your Expenses</h2>
-  <table border="1">
-    <tr>
-      <th>Title</th>
-      <th>Amount</th>
-      <th>Category</th>
-      <th>Date</th>
-      <th>Action</th>
-    </tr>
-    <% expenses.forEach(exp => { %>
-      <tr>
-        <td><%= exp.title %></td>
-        <td><%= exp.amount %></td>
-        <td><%= exp.category %></td>
-        <td><%= exp.date.toISOString().slice(0,10) %></td>
-        <td><a href="/expenses/delete/<%= exp._id %>">Delete</a></td>
-      </tr>
-    <% }) %>
-  </table>
+  <section>
+    <h2>Add Expense</h2>
+    <form action="/expenses/add" method="POST">
+      <input name="title" placeholder="Title" required />
+      <input name="amount" type="number" step="0.01" placeholder="Amount" required />
+      <input name="category" placeholder="Category" required />
+      <input name="date" type="date" />
+      <button type="submit">Add</button>
+    </form>
+  </section>
 
-  <h2>Category Totals</h2>
-  <ul>
-    <% for(let cat in categoryTotals){ %>
-      <li><%= cat %>: <%= categoryTotals[cat] %></li>
+  <section>
+    <h2>Your Expenses</h2>
+    <table>
+      <thead><tr><th>Title</th><th>Amount</th><th>Category</th><th>Date</th><th>Action</th></tr></thead>
+      <tbody>
+        <% expenses.forEach(e => { %>
+          <tr>
+            <td><%= e.title %></td>
+            <td><%= e.amount %></td>
+            <td><%= e.category %></td>
+            <td><%= e.date.toISOString().slice(0,10) %></td>
+            <td><a href="/expenses/delete/<%= e._id %>">Delete</a></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h3>Category Totals</h3>
+    <ul>
+    <% for(const k in categoryTotals){ %>
+      <li><%= k %>: <%= categoryTotals[k] %></li>
     <% } %>
-  </ul>
+    </ul>
 
-  <h2>Monthly Totals</h2>
-  <ul>
-    <% for(let month in monthlyTotals){ %>
-      <li><%= month %>: <%= monthlyTotals[month] %></li>
+    <h3>Monthly Totals</h3>
+    <ul>
+    <% for(const m in monthlyTotals){ %>
+      <li><%= m %>: <%= monthlyTotals[m] %></li>
     <% } %>
-  </ul>
-
-  <p><a href="/chat">Go to Chat</a></p>
-  <p><a href="/login" onclick="fetch('/logout')">Logout</a></p>
+    </ul>
+  </section>
 </body>
 </html>
