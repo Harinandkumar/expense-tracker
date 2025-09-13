@@ -1,60 +1,453 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Dashboard</title>
-  <link rel="stylesheet" href="/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Variables */
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary: #ff6b6b;
+      --accent: #4cc9f0;
+      --light-bg: #f8f9fa;
+      --dark-bg: #1a1d21;
+      --light-text: #f8f9fa;
+      --dark-text: #212529;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #ffc107;
+      --info: #17a2b8;
+      --gray-100: #f8f9fa;
+      --gray-200: #e9ecef;
+      --gray-300: #dee2e6;
+      --gray-400: #ced4da;
+      --gray-600: #6c757d;
+      --gray-800: #343a40;
+      --gray-900: #212529;
+      --border-radius: 12px;
+      --border-radius-sm: 8px;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    /* Reset & Base Styles */
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    
+    body { 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+      background: var(--light-bg);
+      color: var(--dark-text);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    /* Layout */
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: var(--light-text);
+      padding: 20px 30px;
+      border-radius: var(--border-radius);
+      margin-bottom: 30px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    header h1 {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header h1 i {
+      font-size: 1.8rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .small-btn {
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+
+    .chat-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--light-text);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .logout-btn {
+      background: var(--danger);
+      color: var(--light-text);
+    }
+
+    .small-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Main Content Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sections */
+    section {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 25px;
+      box-shadow: var(--shadow);
+      margin-bottom: 25px;
+    }
+
+    section h2 {
+      margin-bottom: 20px;
+      color: var(--gray-800);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    section h2 i {
+      color: var(--primary);
+    }
+
+    section h3 {
+      margin: 25px 0 15px;
+      color: var(--gray-700);
+      font-weight: 600;
+    }
+
+    /* Form Styles */
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    @media (max-width: 600px) {
+      form {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    form input, form button {
+      padding: 14px 16px;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--gray-300);
+      font-size: 15px;
+      transition: var(--transition);
+    }
+
+    form input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+
+    form button {
+      grid-column: span 2;
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (max-width: 600px) {
+      form button {
+        grid-column: span 1;
+      }
+    }
+
+    form button:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
+    }
+
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    thead {
+      background: var(--gray-100);
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--gray-800);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background: var(--gray-100);
+    }
+
+    .action-link {
+      color: var(--danger);
+      text-decoration: none;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: var(--transition);
+    }
+
+    .action-link:hover {
+      color: #bd2130;
+      transform: translateX(2px);
+    }
+
+    /* Summary Styles */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .summary-card {
+      background: var(--gray-100);
+      padding: 20px;
+      border-radius: var(--border-radius-sm);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .summary-card h4 {
+      margin-bottom: 15px;
+      color: var(--gray-700);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-card ul {
+      list-style: none;
+    }
+
+    .summary-card li {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .summary-card li:last-child {
+      border-bottom: none;
+    }
+
+    .category-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--primary);
+      color: white;
+    }
+
+    .amount {
+      font-weight: 600;
+      color: var(--gray-800);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray-600);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      color: var(--gray-300);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    section {
+      animation: fadeIn 0.4s ease;
+    }
+
+    tr {
+      animation: fadeIn 0.3s ease;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Welcome, <%= username %></h1>
-    <a href="/chat" class="small-btn">Chat</a>
-    <a href="/logout" class="small-btn">Logout</a>
-  </header>
+  <div class="dashboard-container">
+    <header>
+      <h1><i class="fas fa-chart-pie"></i> Expense Tracker Dashboard</h1>
+      <div class="header-actions">
+        <a href="/chat" class="small-btn chat-btn">
+          <i class="fas fa-comments"></i> Chat Room
+        </a>
+        <a href="/logout" class="small-btn logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+    </header>
 
-  <section>
-    <h2>Add Expense</h2>
-    <form action="/expenses/add" method="POST">
-      <input name="title" placeholder="Title" required />
-      <input name="amount" type="number" step="0.01" placeholder="Amount" required />
-      <input name="category" placeholder="Category" required />
-      <input name="date" type="date" />
-      <button type="submit">Add</button>
-    </form>
-  </section>
+    <div class="dashboard-grid">
+      <section>
+        <h2><i class="fas fa-plus-circle"></i> Add Expense</h2>
+        <form action="/expenses/add" method="POST">
+          <input name="title" placeholder="Expense Title" required />
+          <input name="amount" type="number" step="0.01" placeholder="Amount" required />
+          <input name="category" placeholder="Category" required />
+          <input name="date" type="date" />
+          <button type="submit">
+            <i class="fas fa-check"></i> Add Expense
+          </button>
+        </form>
+      </section>
 
-  <section>
-    <h2>Your Expenses</h2>
-    <table>
-      <thead><tr><th>Title</th><th>Amount</th><th>Category</th><th>Date</th><th>Action</th></tr></thead>
-      <tbody>
-        <% expenses.forEach(e => { %>
-          <tr>
-            <td><%= e.title %></td>
-            <td><%= e.amount %></td>
-            <td><%= e.category %></td>
-            <td><%= e.date.toISOString().slice(0,10) %></td>
-            <td><a href="/expenses/delete/<%= e._id %>">Delete</a></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </section>
+      <section>
+        <h2><i class="fas fa-receipt"></i> Your Expenses</h2>
+        <% if (expenses.length > 0) { %>
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% expenses.forEach(e => { %>
+                <tr>
+                  <td><%= e.title %></td>
+                  <td class="amount">$<%= e.amount %></td>
+                  <td><span class="category-badge"><%= e.category %></span></td>
+                  <td><%= e.date.toISOString().slice(0,10) %></td>
+                  <td>
+                    <a href="/expenses/delete/<%= e._id %>" class="action-link">
+                      <i class="fas fa-trash"></i> Delete
+                    </a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <div class="empty-state">
+            <i class="fas fa-receipt"></i>
+            <h3>No expenses yet</h3>
+            <p>Add your first expense using the form on the left</p>
+          </div>
+        <% } %>
+      </section>
+    </div>
 
-  <section>
-    <h3>Category Totals</h3>
-    <ul>
-    <% for(const k in categoryTotals){ %>
-      <li><%= k %>: <%= categoryTotals[k] %></li>
-    <% } %>
-    </ul>
+    <section>
+      <h2><i class="fas fa-chart-bar"></i> Expense Summary</h2>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <h4><i class="fas fa-tags"></i> Category Totals</h4>
+          <ul>
+            <% for(const k in categoryTotals){ %>
+              <li>
+                <span class="category-badge"><%= k %></span>
+                <span class="amount">$<%= categoryTotals[k] %></span>
+              </li>
+            <% } %>
+          </ul>
+        </div>
 
-    <h3>Monthly Totals</h3>
-    <ul>
-    <% for(const m in monthlyTotals){ %>
-      <li><%= m %>: <%= monthlyTotals[m] %></li>
-    <% } %>
-    </ul>
-  </section>
+        <div class="summary-card">
+          <h4><i class="fas fa-calendar-alt"></i> Monthly Totals</h4>
+          <ul>
+            <% for(const m in monthlyTotals){ %>
+              <li>
+                <span><%= m %></span>
+                <span class="amount">$<%= monthlyTotals[m] %></span>
+              </li>
+            <% } %>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Set today's date as default for the date field
+    document.addEventListener('DOMContentLoaded', function() {
+      const dateField = document.querySelector('input[type="date"]');
+      if (dateField && !dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+      }
+    });
+  </script>
 </body>
 </html>

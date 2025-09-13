@@ -1,21 +1,360 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Register</title>
-  <link rel="stylesheet" href="/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register | Expense Tracker</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Variables */
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary: #ff6b6b;
+      --accent: #4cc9f0;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #ffc107;
+      --info: #17a2b8;
+      --light-bg: #f8f9fa;
+      --dark-bg: #1a1d21;
+      --light-text: #f8f9fa;
+      --dark-text: #212529;
+      --gray-100: #f8f9fa;
+      --gray-200: #e9ecef;
+      --gray-300: #dee2e6;
+      --gray-400: #ced4da;
+      --gray-600: #6c757d;
+      --gray-800: #343a40;
+      --gray-900: #212529;
+      --border-radius: 12px;
+      --border-radius-sm: 8px;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    /* Reset & Base Styles */
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    
+    body { 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+      background: var(--light-bg);
+      color: var(--dark-text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+
+    /* Form Container */
+    .form-container {
+      background: white;
+      width: 100%;
+      max-width: 480px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header Section */
+    .form-header {
+      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .form-header h2 {
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .form-header p {
+      opacity: 0.9;
+      font-size: 15px;
+    }
+
+    /* Form Body */
+    .form-body {
+      padding: 30px;
+    }
+
+    /* Error Message */
+    .error {
+      background: rgba(220, 53, 69, 0.1);
+      color: var(--danger);
+      padding: 12px 16px;
+      border-radius: var(--border-radius-sm);
+      margin-bottom: 20px;
+      border-left: 4px solid var(--danger);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .form-group i {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      color: var(--gray-600);
+      font-size: 18px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 16px 16px 16px 48px;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--border-radius-sm);
+      font-size: 16px;
+      transition: var(--transition);
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+
+    /* Password Requirements */
+    .password-requirements {
+      background: var(--gray-100);
+      padding: 15px;
+      border-radius: var(--border-radius-sm);
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .password-requirements h4 {
+      margin-bottom: 10px;
+      color: var(--gray-800);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .password-requirements ul {
+      list-style: none;
+      padding-left: 5px;
+    }
+
+    .password-requirements li {
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--gray-600);
+    }
+
+    .password-requirements li i {
+      font-size: 12px;
+    }
+
+    /* Button */
+    button {
+      width: 100%;
+      padding: 16px;
+      background: var(--success);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius-sm);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button:hover {
+      background: #218838;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+    }
+
+    /* Footer */
+    .form-footer {
+      text-align: center;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid var(--gray-200);
+      color: var(--gray-600);
+    }
+
+    .form-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .form-footer a:hover {
+      color: var(--primary-dark);
+      gap: 8px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 480px) {
+      .form-container {
+        max-width: 100%;
+      }
+      
+      .form-header, .form-body {
+        padding: 20px;
+      }
+    }
+
+    /* Additional Visual Elements */
+    .graphic-element {
+      position: absolute;
+      z-index: -1;
+      opacity: 0.05;
+    }
+
+    .graphic-1 {
+      top: 10%;
+      right: 10%;
+      font-size: 120px;
+      color: var(--primary);
+    }
+
+    .graphic-2 {
+      bottom: 15%;
+      left: 10%;
+      font-size: 100px;
+      color: var(--success);
+    }
+  </style>
 </head>
 <body>
-<div class="form-container">
-  <h2>Register</h2>
-  <% if(error){ %><p class="error"><%= error %></p><% } %>
-  <form method="POST" action="/register">
-    <input type="text" name="username" placeholder="Username" required />
-    <input type="email" name="email" placeholder="Email" required />
-    <input type="password" name="password" placeholder="Password" required />
-    <button type="submit">Register</button>
-  </form>
-  <p>Already registered? <a href="/login">Login</a></p>
-</div>
+  <i class="fas fa-wallet graphic-element graphic-1"></i>
+  <i class="fas fa-chart-pie graphic-element graphic-2"></i>
+
+  <div class="form-container">
+    <div class="form-header">
+      <h2><i class="fas fa-user-plus"></i> Create Account</h2>
+      <p>Join Expense Tracker to manage your finances</p>
+    </div>
+
+    <div class="form-body">
+      <% if(error){ %>
+        <div class="error">
+          <i class="fas fa-exclamation-circle"></i>
+          <%= error %>
+        </div>
+      <% } %>
+
+      <div class="password-requirements">
+        <h4><i class="fas fa-shield-alt"></i> Password Requirements</h4>
+        <ul>
+          <li><i class="fas fa-check-circle"></i> At least 8 characters</li>
+          <li><i class="fas fa-check-circle"></i> Include letters and numbers</li>
+        </ul>
+      </div>
+
+      <form method="POST" action="/register">
+        <div class="form-group">
+          <i class="fas fa-user"></i>
+          <input type="text" name="username" placeholder="Username" required />
+        </div>
+
+        <div class="form-group">
+          <i class="fas fa-envelope"></i>
+          <input type="email" name="email" placeholder="Email" required />
+        </div>
+
+        <div class="form-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" name="password" placeholder="Password" required />
+        </div>
+
+        <button type="submit">
+          <i class="fas fa-user-plus"></i> Create Account
+        </button>
+      </form>
+
+      <div class="form-footer">
+        <p>Already have an account? <a href="/login"><i class="fas fa-sign-in-alt"></i> Login</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Add focus effects to form inputs
+    document.addEventListener('DOMContentLoaded', function() {
+      const inputs = document.querySelectorAll('input');
+      
+      inputs.forEach(input => {
+        // Add focus effect
+        input.addEventListener('focus', function() {
+          this.parentElement.querySelector('i').style.color = 'var(--primary)';
+        });
+        
+        // Remove focus effect
+        input.addEventListener('blur', function() {
+          this.parentElement.querySelector('i').style.color = 'var(--gray-600)';
+        });
+      });
+
+      // Simple password strength indicator
+      const passwordInput = document.querySelector('input[name="password"]');
+      if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+          const requirements = document.querySelectorAll('.password-requirements li i');
+          const value = this.value;
+          
+          // Check length requirement
+          if (value.length >= 8) {
+            requirements[0].style.color = 'var(--success)';
+          } else {
+            requirements[0].style.color = 'var(--gray-600)';
+          }
+          
+          // Check complexity requirement
+          if (value.match(/[a-zA-Z]/) && value.match(/[0-9]/)) {
+            requirements[1].style.color = 'var(--success)';
+          } else {
+            requirements[1].style.color = 'var(--gray-600)';
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
