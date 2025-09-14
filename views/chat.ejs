@@ -425,7 +425,7 @@
     
     /* Typing indicator styles */
     .typing-indicator {
-      padding: 0.5em 1em;
+      padding: 0.5em 0.75em;
       margin: 0.5em 0;
       font-size: 0.8125rem;
       color: #54595d;
@@ -433,6 +433,7 @@
       display: flex;
       align-items: center;
       gap: 0.5em;
+      border-bottom: 1px solid #eaecf0;
     }
     
     .typing-dots {
@@ -493,12 +494,14 @@
     <div class="chat-main">
       <div class="chat-messages" id="messages">
         <div class="discussion-heading">Discussion page</div>
-        <div id="typing-indicators"></div>
       </div>
 
       <div class="chat-users">
         <h3>Active contributors</h3>
         <ul id="users"></ul>
+        
+        <!-- Typing indicators will be added here -->
+        <div id="typing-indicators"></div>
       </div>
     </div>
 
@@ -592,12 +595,6 @@
     heading.textContent = 'Discussion page';
     messages.appendChild(heading);
     
-    // Recreate typing indicators container
-    const newTypingContainer = document.createElement('div');
-    newTypingContainer.id = 'typing-indicators';
-    messages.appendChild(newTypingContainer);
-    typingIndicatorsContainer = newTypingContainer;
-    
     const note = document.createElement('div');
     note.className = 'message-container receiver';
     note.innerHTML = `<div class="chat-bubble receiver"><b>System</b> Discussion was purged by a moderator</div>`;
@@ -606,44 +603,38 @@
   });
 
   // Typing indicator events
-  socket.on('userTyping', (data) => {
-    if (data.username !== username) {
-      updateTypingIndicator(data.username, true);
-    }
-  });
-
-  socket.on('userStoppedTyping', (data) => {
-    if (data.username !== username) {
-      updateTypingIndicator(data.username, false);
-    }
+  socket.on('userTyping', (users) => {
+    updateTypingIndicators(users);
   });
 
   // Handle typing events
   input.addEventListener('input', () => {
     if (!isTyping) {
       isTyping = true;
-      socket.emit('typing', { username });
+      socket.emit('typingStart', username);
     }
 
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
       isTyping = false;
-      socket.emit('stopTyping', { username });
+      socket.emit('typingStop', username);
     }, 1000);
   });
 
   // Update typing indicator UI
-  function updateTypingIndicator(username, isTyping) {
-    const indicatorId = `typing-${username}`;
-    let indicator = document.getElementById(indicatorId);
+  function updateTypingIndicators(users) {
+    // Clear existing indicators
+    typingIndicatorsContainer.innerHTML = '';
     
-    if (isTyping) {
-      if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.id = indicatorId;
+    // Filter out current user and create indicators for others
+    users = users.filter(user => user !== username);
+    
+    if (users.length > 0) {
+      users.forEach(user => {
+        const indicator = document.createElement('div');
         indicator.className = 'typing-indicator';
         indicator.innerHTML = `
-          <span>${escapeHtml(username)} is typing</span>
+          <span>${escapeHtml(user)} is typing</span>
           <div class="typing-dots">
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
@@ -651,13 +642,8 @@
           </div>
         `;
         typingIndicatorsContainer.appendChild(indicator);
-      }
-    } else if (indicator) {
-      indicator.remove();
+      });
     }
-    
-    // Scroll to bottom when someone is typing
-    messages.scrollTop = messages.scrollHeight;
   }
 
   // send (with reply support)
@@ -668,7 +654,7 @@
     
     // Stop typing when sending a message
     isTyping = false;
-    socket.emit('stopTyping', { username });
+    socket.emit('typingStop', username);
     clearTimeout(typingTimeout);
     
     const payload = {
