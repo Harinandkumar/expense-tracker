@@ -1,3 +1,4 @@
+// server.js
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -16,193 +17,224 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Connect DB
-mongoose.connect(process.env.MONGO_URI, { })
+// ---------- Config / Connect DB ----------
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/expense-tracker';
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(()=>console.log('✅ MongoDB connected'))
   .catch(err=>console.error('MongoDB connection error:', err));
 
-// View engine + static
-app.set('view engine','ejs');
-app.set('views', path.join(__dirname,'views'));
+// ---------- Middleware ----------
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname,'public')));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Session
+// Session (use env SESSION_SECRET)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'devsecret',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI })
+  store: MongoStore.create({ mongoUrl: MONGO_URI })
 }));
 
-// Auth middleware
-function isAuthenticated(req,res,next){
-  if(req.session.userId) return next();
+// ---------- Auth middleware ----------
+function isAuthenticated(req, res, next){
+  if(req.session && req.session.userId) return next();
   res.redirect('/login');
 }
 
-// Routes
-app.get('/', (req,res)=> res.redirect('/login'));
+// ---------- Routes: auth, dashboard, expenses ----------
+app.get('/', (req, res) => res.redirect('/login'));
 
-// Register
-app.get('/register', (req,res)=> res.render('register',{error:null}));
-app.post('/register', async (req,res)=>{
-  try{
+// Register (simple form)
+app.get('/register', (req, res) => res.render('register', { error: null }));
+app.post('/register', async (req, res) => {
+  try {
     const { username, email, password } = req.body;
-    if(!username || !email || !password) return res.render('register',{error:'All fields required'});
+    if (!username || !email || !password) return res.render('register', { error: 'All fields required' });
 
-    const exists = await User.findOne({ $or:[{username},{email}] });
-    if(exists) return res.render('register',{error:'Username or Email already used'});
+    const exists = await User.findOne({ $or: [{ username }, { email }] });
+    if (exists) return res.render('register', { error: 'Username or Email already used' });
 
-    const user = new User({ username, email, password });
+    const hashed = await bcrypt.hash(password, 10);
+    const user = new User({ username, email, password: hashed });
     await user.save();
     res.redirect('/login');
-  } catch(err){
+  } catch (err) {
     console.error('Registration error:', err);
-    res.render('register',{error:'Server error. Try again later.'});
+    res.render('register', { error: 'Server error. Try again later.' });
   }
 });
 
 // Login
-app.get('/login', (req,res)=> res.render('login',{error:null}));
-app.post('/login', async (req,res)=>{
-  try{
+app.get('/login', (req, res) => res.render('login', { error: null }));
+app.post('/login', async (req, res) => {
+  try {
     const { username, password } = req.body;
-    if(!username || !password) return res.render('login',{error:'All fields required'});
+    if (!username || !password) return res.render('login', { error: 'All fields required' });
 
-    const user = await User.findOne({ $or:[{username},{email:username}] }); // allow username or email
-    if(!user) return res.render('login',{error:'Invalid username or password'});
+    // allow username or email
+    const user = await User.findOne({ $or: [{ username }, { email: username }] });
+    if (!user) return res.render('login', { error: 'Invalid username or password' });
 
-    const ok = await user.comparePassword(password);
-    if(!ok) return res.render('login',{error:'Invalid username or password'});
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.render('login', { error: 'Invalid username or password' });
 
     req.session.userId = user._id;
-    req.session.username = user.username;
+    req.session.username = user.username || user.email;
     res.redirect('/dashboard');
-  } catch(err){
+  } catch (err) {
     console.error('Login error:', err);
-    res.render('login',{error:'Server error. Try again later.'});
+    res.render('login', { error: 'Server error. Try again later.' });
   }
 });
 
 // Logout
-app.get('/logout',(req,res)=>{
-  req.session.destroy(()=> res.redirect('/login'));
+app.get('/logout', (req, res) => {
+  req.session.destroy(()=>res.redirect('/login'));
 });
 
-// Dashboard (expenses)
-app.get('/dashboard', isAuthenticated, async (req,res)=>{
-  try{
-    const expenses = await Expense.find({ userId: req.session.userId }).sort({date:-1});
+// Dashboard - expenses and charts data
+app.get('/dashboard', isAuthenticated, async (req, res) => {
+  try {
+    const expenses = await Expense.find({ userId: req.session.userId }).sort({ date: -1 });
+
     const categoryTotals = {};
     const monthlyTotals = {};
 
-    expenses.forEach(e=>{
-      categoryTotals[e.category] = (categoryTotals[e.category]||0) + e.amount;
-      const month = e.date.toISOString().slice(0,7);
-      monthlyTotals[month] = (monthlyTotals[month]||0) + e.amount;
+    expenses.forEach(e => {
+      const cat = e.category || 'Uncategorized';
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + (Number(e.amount) || 0);
+
+      const month = e.date ? (new Date(e.date)).toISOString().slice(0,7) : 'unknown';
+      monthlyTotals[month] = (monthlyTotals[month] || 0) + (Number(e.amount) || 0);
     });
 
-    res.render('dashboard',{
+    res.render('dashboard', {
       username: req.session.username,
       expenses,
       categoryTotals,
       monthlyTotals
     });
-  } catch(err){
+  } catch (err) {
     console.error('Dashboard error:', err);
-    res.send('Server error');
+    res.status(500).send('Server error');
   }
 });
 
 // Add expense
-app.post('/expenses/add', isAuthenticated, async (req,res)=>{
-  try{
+app.post('/expenses/add', isAuthenticated, async (req, res) => {
+  try {
     const { title, amount, category, date } = req.body;
     const exp = new Expense({
       userId: req.session.userId,
       title,
-      amount: parseFloat(amount),
+      amount: parseFloat(amount) || 0,
       category,
-      date: date ? new Date(date) : undefined
+      date: date ? new Date(date) : new Date()
     });
     await exp.save();
     res.redirect('/dashboard');
-  } catch(err){
+  } catch (err) {
     console.error('Add expense error:', err);
-    res.send('Server error');
+    res.status(500).send('Server error');
   }
 });
 
 // Delete expense
-app.get('/expenses/delete/:id', isAuthenticated, async (req,res)=>{
-  try{
+app.get('/expenses/delete/:id', isAuthenticated, async (req, res) => {
+  try {
     await Expense.findByIdAndDelete(req.params.id);
     res.redirect('/dashboard');
-  } catch(err){
+  } catch (err) {
     console.error('Delete expense error:', err);
-    res.send('Server error');
+    res.status(500).send('Server error');
   }
 });
 
 // Chat page
-app.get('/chat', isAuthenticated, (req,res)=>{
-  res.render('chat',{ username: req.session.username });
+app.get('/chat', isAuthenticated, (req, res) => {
+  res.render('chat', { username: req.session.username });
 });
 
-// ========== SOCKET.IO ==========
+// ---------- SOCKET.IO: chat with reply support ----------
 const onlineUsers = new Set();
 
-io.on('connection', (socket)=>{
+io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
 
-  // client should emit joinChat with username when loading chat
-  socket.on('joinChat', (username)=>{
+  // join chat with username (client emits 'joinChat' on load)
+  socket.on('joinChat', (username) => {
     socket.username = username;
-    onlineUsers.add(username);
+    if (username) onlineUsers.add(username);
     io.emit('updateUsers', Array.from(onlineUsers));
   });
 
-  // load history
-  Message.find().sort({ createdAt: 1 }).then(msgs=>{
+  // send history to the newly connected socket
+  Message.find().sort({ createdAt: 1 }).lean().then(msgs => {
+    // msgs already contain replyTo object (id, username, text) per model
     socket.emit('loadMessages', msgs);
-  }).catch(err=>console.error(err));
+  }).catch(err => console.error('load messages error:', err));
 
-  // new message
-  socket.on('chatMessage', async (data)=>{
-    try{
-      const msg = new Message({ username: data.username, text: data.text });
+  // new message event (supports reply)
+  // expected data shape from client:
+  // { username: 'Aman', text: 'hello', replyTo: { id: '...', username: 'X', text: 'parent text' } } or replyTo: null
+  socket.on('chatMessage', async (data) => {
+    try {
+      const replyObj = (data.replyTo && data.replyTo.id) ? {
+        id: String(data.replyTo.id),
+        username: data.replyTo.username || null,
+        text: data.replyTo.text || null
+      } : { id: null, username: null, text: null };
+
+      const msg = new Message({
+        username: data.username,
+        text: data.text,
+        replyTo: replyObj
+      });
+
       const saved = await msg.save();
-      io.emit('newMessage', saved);
-    } catch(err){
+
+      // send saved message to all clients
+      // saved is a mongoose doc; convert to plain object for safety
+      const out = {
+        _id: String(saved._id),
+        username: saved.username,
+        text: saved.text,
+        replyTo: saved.replyTo || null,
+        createdAt: saved.createdAt
+      };
+
+      io.emit('newMessage', out);
+    } catch (err) {
       console.error('chatMessage save error:', err);
     }
   });
 
-  // delete specific message (anyone can delete)
-  socket.on('deleteMessage', async (msgId)=>{
-    try{
+  // delete single message
+  socket.on('deleteMessage', async (msgId) => {
+    try {
       await Message.findByIdAndDelete(msgId);
       io.emit('messageDeleted', msgId);
-    } catch(err){
+    } catch (err) {
       console.error('deleteMessage error:', err);
     }
   });
 
-  // delete all messages
-  socket.on('deleteAllMessages', async ()=>{
-    try{
+  // delete all
+  socket.on('deleteAllMessages', async () => {
+    try {
       await Message.deleteMany({});
       io.emit('allMessagesDeleted');
-    } catch(err){
+    } catch (err) {
       console.error('deleteAllMessages error:', err);
     }
   });
 
   // disconnect
-  socket.on('disconnect', ()=>{
-    if(socket.username){
+  socket.on('disconnect', () => {
+    if (socket.username) {
       onlineUsers.delete(socket.username);
       io.emit('updateUsers', Array.from(onlineUsers));
     }
@@ -210,6 +242,6 @@ io.on('connection', (socket)=>{
   });
 });
 
-// Start
+// ---------- Start server ----------
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, ()=> console.log(`🚀 Server running at http://localhost:${PORT}`));

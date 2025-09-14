@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wikipedia Style Chat</title>
+  <title>Wikipedia Chat</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     /* Wikipedia-inspired color scheme */
@@ -17,6 +17,8 @@
       --wikipedia-red: #cc0000;
       --wikipedia-green: #00af89;
       --wikipedia-background: #f8f9fa;
+      --wikipedia-reply-indicator: #e6f2ff;
+      --wikipedia-sidebar-bg: #f6f6f6;
     }
 
     /* Reset & Base Styles */
@@ -27,10 +29,10 @@
     }
     
     body { 
-      font-family: 'Linux Libertine', 'Georgia', 'Times', serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Lato, Helvetica, Arial, sans-serif;
       background: var(--wikipedia-background);
       color: var(--wikipedia-text);
-      line-height: 1.5;
+      line-height: 1.6;
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -40,7 +42,7 @@
     .chat-header { 
       background: white;
       border-bottom: 1px solid var(--wikipedia-border);
-      padding: 8px 16px;
+      padding: 0.5em 1.5em;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -51,7 +53,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 16px;
+      font-size: 0.875rem;
       font-weight: normal;
     }
     
@@ -63,7 +65,7 @@
     .username {
       font-weight: bold;
       color: var(--wikipedia-dark-blue);
-      font-size: 14px;
+      font-size: 0.875rem;
     }
     
     .header-actions {
@@ -73,10 +75,10 @@
     
     .chat-header button,
     .chat-header a { 
-      padding: 6px 12px;
+      padding: 0.375rem 0.75rem;
       border: 1px solid var(--wikipedia-border);
       border-radius: 2px;
-      font-size: 14px;
+      font-size: 0.75rem;
       text-decoration: none;
       cursor: pointer;
       transition: background-color 0.2s;
@@ -103,8 +105,8 @@
       display: flex;
       flex-direction: column;
       height: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
+      max-width: 100%;
+      margin: 0;
       background: white;
       width: 100%;
     }
@@ -118,21 +120,21 @@
 
     /* Chat messages - Wikipedia discussion style */
     .chat-messages { 
-      flex: 3;
-      padding: 16px;
+      flex: 1;
+      padding: 1.5em;
       background: white;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      border-right: 1px solid var(--wikipedia-border);
+      gap: 1.5em;
     }
     
     /* Message containers */
     .message-container {
       display: flex;
       flex-direction: column;
-      max-width: 75%;
+      max-width: 85%;
+      position: relative;
     }
     
     .message-container.sender {
@@ -147,13 +149,15 @@
     
     /* Message bubbles */
     .chat-bubble { 
-      padding: 10px 14px;
+      padding: 0.75em 1em;
       border: 1px solid var(--wikipedia-border);
       border-radius: 3px;
       background: white;
       position: relative;
       word-wrap: break-word;
-      line-height: 1.4;
+      line-height: 1.5;
+      width: 100%;
+      font-size: 0.875rem;
     }
     
     .chat-bubble.sender { 
@@ -170,10 +174,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12px;
-      margin-top: 4px;
-      padding: 0 4px;
+      font-size: 0.75rem;
+      margin-top: 0.25em;
+      padding: 0 0.25em;
       width: 100%;
+      color: #54595d;
     }
     
     .message-sender {
@@ -182,7 +187,7 @@
     }
     
     .message-time {
-      color: #54595d;
+      color: #72777d;
     }
     
     /* Delete button - subtle Wikipedia style */
@@ -191,13 +196,13 @@
       border: none;
       color: #72777d;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 0.75rem;
       position: absolute;
-      top: 6px;
-      right: 6px;
+      top: 0.5em;
+      right: 0.5em;
       opacity: 0;
       transition: opacity 0.2s;
-      padding: 2px;
+      padding: 0.125em;
     }
     
     .chat-bubble:hover .delBtn { 
@@ -210,19 +215,19 @@
 
     /* Users sidebar - Wikipedia style */
     .chat-users { 
-      width: 220px;
-      padding: 16px;
-      background: white;
+      width: 240px;
+      padding: 1em;
+      background: var(--wikipedia-sidebar-bg);
       overflow-y: auto;
       border-left: 1px solid var(--wikipedia-border);
     }
     
     .chat-users h3 { 
-      margin-bottom: 12px;
-      font-size: 16px;
+      margin: 0 0 1em 0;
+      font-size: 1rem;
       font-weight: bold;
       color: var(--wikipedia-text);
-      padding-bottom: 6px;
+      padding-bottom: 0.5em;
       border-bottom: 1px solid var(--wikipedia-border);
     }
     
@@ -231,9 +236,9 @@
     }
     
     .chat-users li { 
-      padding: 8px 12px;
-      margin-bottom: 6px;
-      font-size: 14px;
+      padding: 0.5em 0.75em;
+      margin-bottom: 0.25em;
+      font-size: 0.875rem;
       border-bottom: 1px solid #eaecf0;
     }
     
@@ -249,19 +254,19 @@
     /* Chat form - Wikipedia style */
     .chat-form { 
       display: flex;
-      padding: 12px 16px;
+      padding: 1em 1.5em;
       background: #f8f9fa;
       border-top: 1px solid var(--wikipedia-border);
-      gap: 8px;
+      gap: 0.5em;
     }
     
     .chat-form input { 
       flex: 1;
-      padding: 10px 12px;
+      padding: 0.625em 0.75em;
       border: 1px solid var(--wikipedia-border);
       border-radius: 2px;
       outline: none;
-      font-size: 14px;
+      font-size: 0.875rem;
       font-family: inherit;
     }
     
@@ -271,14 +276,15 @@
     }
     
     .chat-form button { 
-      padding: 10px 16px;
+      padding: 0.625em 1em;
       border: 1px solid var(--wikipedia-blue);
       border-radius: 2px;
       background: var(--wikipedia-blue);
       color: white;
       cursor: pointer;
       font-family: inherit;
-      font-size: 14px;
+      font-size: 0.875rem;
+      white-space: nowrap;
     }
     
     .chat-form button:hover { 
@@ -300,12 +306,20 @@
       }
       
       .message-container {
-        max-width: 90%;
+        max-width: 95%;
       }
       
       .header-actions {
         flex-wrap: wrap;
         justify-content: flex-end;
+      }
+      
+      .chat-header {
+        padding: 0.5em;
+      }
+      
+      .chat-messages {
+        padding: 1em;
       }
     }
 
@@ -313,8 +327,100 @@
     .message-sender:after {
       content: " (talk)";
       font-weight: normal;
-      font-size: 11px;
+      font-size: 0.6875rem;
       color: #54595d;
+    }
+    
+    /* Reply functionality styles */
+    .reply-btn {
+      background: transparent;
+      border: none;
+      color: #72777d;
+      cursor: pointer;
+      font-size: 0.75rem;
+      margin-left: 0.5em;
+      padding: 0.125em 0.375em;
+    }
+    
+    .reply-btn:hover {
+      color: var(--wikipedia-blue);
+      text-decoration: underline;
+    }
+    
+    .reply-indicator {
+      background: var(--wikipedia-reply-indicator);
+      border-left: 3px solid var(--wikipedia-blue);
+      padding: 0.75em 1em;
+      margin: 0 1.5em;
+      font-size: 0.8125rem;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .reply-indicator .replying-to {
+      font-weight: bold;
+      color: var(--wikipedia-dark-blue);
+    }
+    
+    .reply-indicator .cancel-reply {
+      margin-left: 0.5em;
+      color: var(--wikipedia-blue);
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+    
+    .reply-indicator .cancel-reply:hover {
+      text-decoration: underline;
+    }
+    
+    .quoted-message {
+      font-style: italic;
+      color: #54595d;
+      border-left: 2px solid #a2a9b1;
+      padding-left: 0.5em;
+      margin: 0.5em 0;
+      font-size: 0.8125rem;
+      line-height: 1.4;
+    }
+    
+    /* Wikipedia-style horizontal rule */
+    .chat-messages hr {
+      height: 1px;
+      background-color: var(--wikipedia-border);
+      border: 0;
+      margin: 1.5em 0;
+    }
+    
+    /* Section heading style */
+    .discussion-heading {
+      font-size: 1.125rem;
+      font-weight: bold;
+      color: var(--wikipedia-text);
+      border-bottom: 1px solid var(--wikipedia-border);
+      padding-bottom: 0.5em;
+      margin-bottom: 1em;
+    }
+    
+    /* Wikipedia link style */
+    a {
+      color: var(--wikipedia-blue);
+      text-decoration: none;
+    }
+    
+    a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Notification style */
+    .notification {
+      background: #fef6e7;
+      border: 1px solid #fc3;
+      padding: 0.75em 1em;
+      margin: 1em 0;
+      border-radius: 2px;
+      font-size: 0.875rem;
     }
   </style>
 </head>
@@ -323,7 +429,7 @@
     <div class="chat-header">
       <div class="header-title">
         <i class="fas fa-comments"></i>
-        <span>Chat discussion: <strong><%= username %></strong></span>
+        <span>Wikipedia discussion: <strong><%= username %></strong></span>
       </div>
       <div class="header-actions">
         <button id="deleteAllBtn" class="delete-all">
@@ -339,18 +445,27 @@
     </div>
 
     <div class="chat-main">
-      <div class="chat-messages" id="messages"></div>
+      <div class="chat-messages" id="messages">
+        <div class="discussion-heading">Discussion page</div>
+      </div>
 
       <div class="chat-users">
-        <h3>Active users</h3>
+        <h3>Active contributors</h3>
         <ul id="users"></ul>
       </div>
+    </div>
+
+    <div id="replyIndicator" class="reply-indicator" style="display: none;">
+      <div>
+        Replying to <span class="replying-to"></span>
+      </div>
+      <a class="cancel-reply">Cancel</a>
     </div>
 
     <form id="chatForm" class="chat-form">
       <input id="msg" autocomplete="off" placeholder="Contribute to the discussion..." />
       <button>
-        <i class="fas fa-pencil-alt"></i> Post
+        <i class="fas fa-pencil-alt"></i> Post comment
       </button>
     </form>
   </div>
@@ -364,8 +479,12 @@
   const form = document.getElementById('chatForm');
   const input = document.getElementById('msg');
   const deleteAllBtn = document.getElementById('deleteAllBtn');
+  const replyIndicator = document.getElementById('replyIndicator');
+  const replyingToSpan = document.querySelector('.replying-to');
+  const cancelReplyBtn = document.querySelector('.cancel-reply');
 
-  // Format time function (Wikipedia style) - Time only, no date
+  let replyingToMessage = null;
+
   function formatTime(date) {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
@@ -375,35 +494,25 @@
 
   // load old messages
   socket.on('loadMessages', msgs => {
+    // Remove the initial heading if we have messages
+    if (msgs.length > 0) {
+      const heading = document.querySelector('.discussion-heading');
+      if (heading) heading.remove();
+    }
+    
     msgs.forEach(m => appendMessage(m));
   });
 
   // new incoming
-  socket.on('newMessage', m => appendMessage(m));
-
-  // message deleted
-  socket.on('messageDeleted', id => {
-    const el = document.getElementById(id);
-    if(el) {
-      el.style.opacity = '0';
-      setTimeout(() => el.remove(), 300);
-    }
+  socket.on('newMessage', m => {
+    // Remove the initial heading when first message arrives
+    const heading = document.querySelector('.discussion-heading');
+    if (heading) heading.remove();
+    
+    appendMessage(m);
   });
 
-  // all messages deleted
-  socket.on('allMessagesDeleted', () => {
-    messages.innerHTML = '';
-    const notification = document.createElement('div');
-    notification.className = 'message-container receiver';
-    notification.innerHTML = `
-      <div class="chat-bubble receiver">
-        <b>System</b> Discussion was purged by ${username}
-      </div>
-    `;
-    messages.appendChild(notification);
-  });
-
-  // users update
+  // update users
   socket.on('updateUsers', users => {
     usersList.innerHTML = '';
     users.forEach(u => {
@@ -413,13 +522,46 @@
     });
   });
 
-  // send
+  // message deleted
+  socket.on('messageDeleted', id => {
+    const el = document.getElementById(id);
+    if(el) {
+      el.style.opacity = '0';
+      setTimeout(()=> el.remove(), 300);
+    }
+    if(replyingToMessage && replyingToMessage._id === id) cancelReply();
+  });
+
+  // all messages deleted
+  socket.on('allMessagesDeleted', () => {
+    messages.innerHTML = '';
+    
+    // Add the heading back when all messages are deleted
+    const heading = document.createElement('div');
+    heading.className = 'discussion-heading';
+    heading.textContent = 'Discussion page';
+    messages.appendChild(heading);
+    
+    const note = document.createElement('div');
+    note.className = 'message-container receiver';
+    note.innerHTML = `<div class="chat-bubble receiver"><b>System</b> Discussion was purged by a moderator</div>`;
+    messages.appendChild(note);
+    cancelReply();
+  });
+
+  // send (with reply support)
   form.addEventListener('submit', e => {
     e.preventDefault();
-    if(input.value.trim()){
-      socket.emit('chatMessage', { username, text: input.value });
-      input.value = '';
-    }
+    const text = input.value.trim();
+    if(!text) return;
+    const payload = {
+      username,
+      text,
+      replyTo: replyingToMessage ? { id: replyingToMessage._id, username: replyingToMessage.username, text: replyingToMessage.text } : null
+    };
+    socket.emit('chatMessage', payload);
+    input.value = '';
+    cancelReply();
   });
 
   // delete all
@@ -427,42 +569,66 @@
     if(confirm('Purge all messages from this discussion?')) socket.emit('deleteAllMessages');
   });
 
-  // helper to add message DOM (Wikipedia style)
-  function appendMessage(m){
-    const isMe = m.username === username;
-    const messageContainer = document.createElement('div');
-    messageContainer.className = `message-container ${isMe ? 'sender' : 'receiver'}`;
-    messageContainer.id = m._id;
-    
-    const bubble = document.createElement('div');
-    bubble.className = `chat-bubble ${isMe ? 'sender' : 'receiver'}`;
-    bubble.innerHTML = `${escapeHtml(m.text)} 
-      <button class="delBtn" onclick="deleteMsg('${m._id}')" title="Delete message">
-        <i class="fas fa-times"></i>
-      </button>`;
-    
-    const infoDiv = document.createElement('div');
-    infoDiv.className = 'message-info';
-    infoDiv.innerHTML = `
-      <span class="message-sender">${escapeHtml(m.username)}</span>
-      <span class="message-time">${formatTime(m.timestamp || Date.now())}</span>
-    `;
-    
-    messageContainer.appendChild(bubble);
-    messageContainer.appendChild(infoDiv);
-    messages.appendChild(messageContainer);
-    messages.scrollTop = messages.scrollHeight;
+  cancelReplyBtn.addEventListener('click', cancelReply);
+
+  function cancelReply(){
+    replyingToMessage = null;
+    replyIndicator.style.display = 'none';
   }
+
+  window.setupReply = function(data){
+    // data passed as JS object (from onclick)
+    replyingToMessage = data;
+    replyingToSpan.textContent = data.username;
+    replyIndicator.style.display = 'block';
+    input.focus();
+  };
 
   window.deleteMsg = function(id){
     if(confirm('Delete this message from the discussion?')) socket.emit('deleteMessage', id);
   };
 
-  // safe simple escape
-  function escapeHtml(s){ 
-    return String(s).replace(/[&<>"']/g, function(m){ 
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; 
-    }); 
+  // helper - escape HTML
+  function escapeHtml(s){
+    if(typeof s !== 'string') return s;
+    return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
+  }
+
+  function appendMessage(m){
+    // m expected shape: {_id, username, text, replyTo: {id, username, text} | null, createdAt}
+    const isMe = m.username === username;
+    const container = document.createElement('div');
+    container.className = `message-container ${isMe ? 'sender' : 'receiver'}`;
+    container.id = m._id;
+
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${isMe ? 'sender' : 'receiver'}`;
+
+    // reply block
+    let content = escapeHtml(m.text || '');
+    if (m.replyTo && m.replyTo.id) {
+      const quoted = `<div class="quoted-message">In reply to ${escapeHtml(m.replyTo.username)}: ${escapeHtml(m.replyTo.text)}</div>`;
+      content = quoted + content;
+    }
+
+    bubble.innerHTML = `${content}
+      <button class="delBtn" onclick="deleteMsg('${m._id}')" title="Delete message"><i class="fas fa-times"></i></button>
+    `;
+
+    const info = document.createElement('div');
+    info.className = 'message-info';
+    info.innerHTML = `
+      <span class="message-sender">${escapeHtml(m.username)}</span>
+      <span>
+        <span class="message-time">${formatTime(m.createdAt || Date.now())}</span>
+        <button class="reply-btn" onclick='window.setupReply(${JSON.stringify({ _id: m._id, username: m.username, text: m.text })})' title="Reply to this message"><i class="fas fa-reply"></i> Reply</button>
+      </span>
+    `;
+
+    container.appendChild(bubble);
+    container.appendChild(info);
+    messages.appendChild(container);
+    messages.scrollTop = messages.scrollHeight;
   }
 </script>
 </body>
