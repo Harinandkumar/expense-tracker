@@ -422,6 +422,52 @@
       border-radius: 2px;
       font-size: 0.875rem;
     }
+    
+    /* Typing indicator styles */
+    .typing-indicator {
+      padding: 0.5em 1em;
+      margin: 0.5em 0;
+      font-size: 0.8125rem;
+      color: #54595d;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    
+    .typing-dots {
+      display: flex;
+      gap: 0.2em;
+    }
+    
+    .typing-dot {
+      width: 0.4em;
+      height: 0.4em;
+      border-radius: 50%;
+      background-color: #72777d;
+      animation: typingAnimation 1.4s infinite ease-in-out;
+    }
+    
+    .typing-dot:nth-child(1) {
+      animation-delay: 0s;
+    }
+    
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    
+    @keyframes typingAnimation {
+      0%, 60%, 100% {
+        transform: translateY(0);
+      }
+      30% {
+        transform: translateY(-0.3em);
+      }
+    }
   </style>
 </head>
 <body>
@@ -447,6 +493,7 @@
     <div class="chat-main">
       <div class="chat-messages" id="messages">
         <div class="discussion-heading">Discussion page</div>
+        <div id="typing-indicators"></div>
       </div>
 
       <div class="chat-users">
@@ -482,8 +529,11 @@
   const replyIndicator = document.getElementById('replyIndicator');
   const replyingToSpan = document.querySelector('.replying-to');
   const cancelReplyBtn = document.querySelector('.cancel-reply');
+  const typingIndicatorsContainer = document.getElementById('typing-indicators');
 
   let replyingToMessage = null;
+  let typingTimeout;
+  let isTyping = false;
 
   function formatTime(date) {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -542,6 +592,12 @@
     heading.textContent = 'Discussion page';
     messages.appendChild(heading);
     
+    // Recreate typing indicators container
+    const newTypingContainer = document.createElement('div');
+    newTypingContainer.id = 'typing-indicators';
+    messages.appendChild(newTypingContainer);
+    typingIndicatorsContainer = newTypingContainer;
+    
     const note = document.createElement('div');
     note.className = 'message-container receiver';
     note.innerHTML = `<div class="chat-bubble receiver"><b>System</b> Discussion was purged by a moderator</div>`;
@@ -549,11 +605,72 @@
     cancelReply();
   });
 
+  // Typing indicator events
+  socket.on('userTyping', (data) => {
+    if (data.username !== username) {
+      updateTypingIndicator(data.username, true);
+    }
+  });
+
+  socket.on('userStoppedTyping', (data) => {
+    if (data.username !== username) {
+      updateTypingIndicator(data.username, false);
+    }
+  });
+
+  // Handle typing events
+  input.addEventListener('input', () => {
+    if (!isTyping) {
+      isTyping = true;
+      socket.emit('typing', { username });
+    }
+
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      isTyping = false;
+      socket.emit('stopTyping', { username });
+    }, 1000);
+  });
+
+  // Update typing indicator UI
+  function updateTypingIndicator(username, isTyping) {
+    const indicatorId = `typing-${username}`;
+    let indicator = document.getElementById(indicatorId);
+    
+    if (isTyping) {
+      if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = indicatorId;
+        indicator.className = 'typing-indicator';
+        indicator.innerHTML = `
+          <span>${escapeHtml(username)} is typing</span>
+          <div class="typing-dots">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        `;
+        typingIndicatorsContainer.appendChild(indicator);
+      }
+    } else if (indicator) {
+      indicator.remove();
+    }
+    
+    // Scroll to bottom when someone is typing
+    messages.scrollTop = messages.scrollHeight;
+  }
+
   // send (with reply support)
   form.addEventListener('submit', e => {
     e.preventDefault();
     const text = input.value.trim();
     if(!text) return;
+    
+    // Stop typing when sending a message
+    isTyping = false;
+    socket.emit('stopTyping', { username });
+    clearTimeout(typingTimeout);
+    
     const payload = {
       username,
       text,

@@ -20,8 +20,8 @@ const io = new Server(server);
 // ---------- Config / Connect DB ----------
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/expense-tracker';
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(()=>console.log('✅ MongoDB connected'))
-  .catch(err=>console.error('MongoDB connection error:', err));
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // ---------- Middleware ----------
 app.use(express.urlencoded({ extended: true }));
@@ -39,27 +39,56 @@ app.use(session({
 }));
 
 // ---------- Auth middleware ----------
-function isAuthenticated(req, res, next){
-  if(req.session && req.session.userId) return next();
+function isAuthenticated(req, res, next) {
+  if (req.session && req.session.userId) return next();
   res.redirect('/login');
 }
 
 // ---------- Routes: auth, dashboard, expenses ----------
 app.get('/', (req, res) => res.redirect('/login'));
 
+// ---------- Auth Routes ----------
+
 // Register (simple form)
 app.get('/register', (req, res) => res.render('register', { error: null }));
+
 app.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    if (!username || !email || !password) return res.render('register', { error: 'All fields required' });
+    console.log('Registration attempt:', { username, email });
+    
+    if (!username || !email || !password) {
+      return res.render('register', { error: 'All fields are required' });
+    }
 
-    const exists = await User.findOne({ $or: [{ username }, { email }] });
-    if (exists) return res.render('register', { error: 'Username or Email already used' });
+    // Check if username or email already exists
+    const existingUser = await User.findOne({ 
+      $or: [{ username: username.trim() }, { email: email.trim() }] 
+    });
+    
+    if (existingUser) {
+      if (existingUser.username === username.trim()) {
+        return res.render('register', { error: 'Username already taken' });
+      }
+      if (existingUser.email === email.trim()) {
+        return res.render('register', { error: 'Email already registered' });
+      }
+    }
 
-    const hashed = await bcrypt.hash(password, 10);
-    const user = new User({ username, email, password: hashed });
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Save new user
+    const user = new User({ 
+      username: username.trim(), 
+      email: email.trim(), 
+      password: hashedPassword 
+    });
+    
     await user.save();
+    console.log('User registered successfully:', user.username);
+
+    // Redirect to login
     res.redirect('/login');
   } catch (err) {
     console.error('Registration error:', err);
@@ -69,20 +98,42 @@ app.post('/register', async (req, res) => {
 
 // Login
 app.get('/login', (req, res) => res.render('login', { error: null }));
+
 app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    if (!username || !password) return res.render('login', { error: 'All fields required' });
+    console.log('Login attempt:', { username });
+    
+    if (!username || !password) {
+      return res.render('login', { error: 'All fields are required' });
+    }
 
-    // allow username or email
-    const user = await User.findOne({ $or: [{ username }, { email: username }] });
-    if (!user) return res.render('login', { error: 'Invalid username or password' });
+    // Find user by username OR email (trim inputs)
+    const user = await User.findOne({ 
+      $or: [
+        { username: username.trim() }, 
+        { email: username.trim() }
+      ] 
+    });
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.render('login', { error: 'Invalid username or password' });
+    if (!user) {
+      console.log('User not found:', username);
+      return res.render('login', { error: 'Invalid username or password' });
+    }
 
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('Password valid:', isPasswordValid);
+    
+    if (!isPasswordValid) {
+      return res.render('login', { error: 'Invalid username or password' });
+    }
+
+    // Save session
     req.session.userId = user._id;
-    req.session.username = user.username || user.email;
+    req.session.username = user.username;
+    console.log('Login successful:', user.username);
+
     res.redirect('/dashboard');
   } catch (err) {
     console.error('Login error:', err);
@@ -92,7 +143,7 @@ app.post('/login', async (req, res) => {
 
 // Logout
 app.get('/logout', (req, res) => {
-  req.session.destroy(()=>res.redirect('/login'));
+  req.session.destroy(() => res.redirect('/login'));
 });
 
 // Dashboard - expenses and charts data
@@ -107,7 +158,7 @@ app.get('/dashboard', isAuthenticated, async (req, res) => {
       const cat = e.category || 'Uncategorized';
       categoryTotals[cat] = (categoryTotals[cat] || 0) + (Number(e.amount) || 0);
 
-      const month = e.date ? (new Date(e.date)).toISOString().slice(0,7) : 'unknown';
+      const month = e.date ? (new Date(e.date)).toISOString().slice(0, 7) : 'unknown';
       monthlyTotals[month] = (monthlyTotals[month] || 0) + (Number(e.amount) || 0);
     });
 
@@ -158,8 +209,9 @@ app.get('/chat', isAuthenticated, (req, res) => {
   res.render('chat', { username: req.session.username });
 });
 
-// ---------- SOCKET.IO: chat with reply support ----------
+// ---------- SOCKET.IO: chat with reply and typing indicator support ----------
 const onlineUsers = new Set();
+const typingUsers = new Set();
 
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
@@ -232,8 +284,30 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Typing indicator events
+  socket.on('typing', (data) => {
+    if (data.username && !typingUsers.has(data.username)) {
+      typingUsers.add(data.username);
+      socket.broadcast.emit('userTyping', data);
+    }
+  });
+
+  socket.on('stopTyping', (data) => {
+    if (data.username && typingUsers.has(data.username)) {
+      typingUsers.delete(data.username);
+      socket.broadcast.emit('userStoppedTyping', data);
+    }
+  });
+
   // disconnect
   socket.on('disconnect', () => {
+    // Remove user from typing list
+    if (socket.username && typingUsers.has(socket.username)) {
+      typingUsers.delete(socket.username);
+      socket.broadcast.emit('userStoppedTyping', { username: socket.username });
+    }
+    
+    // Remove user from online list
     if (socket.username) {
       onlineUsers.delete(socket.username);
       io.emit('updateUsers', Array.from(onlineUsers));
@@ -244,4 +318,4 @@ io.on('connection', (socket) => {
 
 // ---------- Start server ----------
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, ()=> console.log(`🚀 Server running at http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
