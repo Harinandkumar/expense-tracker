@@ -602,12 +602,12 @@
     cancelReply();
   });
 
-  // Typing indicator events
+  // Typing indicator events - FIXED TO MATCH SERVER
   socket.on('userTyping', (users) => {
     updateTypingIndicators(users);
   });
 
-  // Handle typing events
+  // Handle typing events - FIXED TO MATCH SERVER
   input.addEventListener('input', () => {
     if (!isTyping) {
       isTyping = true;
@@ -627,10 +627,10 @@
     typingIndicatorsContainer.innerHTML = '';
     
     // Filter out current user and create indicators for others
-    users = users.filter(user => user !== username);
+    const otherUsers = users.filter(user => user !== username);
     
-    if (users.length > 0) {
-      users.forEach(user => {
+    if (otherUsers.length > 0) {
+      otherUsers.forEach(user => {
         const indicator = document.createElement('div');
         indicator.className = 'typing-indicator';
         indicator.innerHTML = `
