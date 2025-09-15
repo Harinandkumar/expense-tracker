@@ -208,7 +208,6 @@ app.get('/expenses/delete/:id', isAuthenticated, async (req, res) => {
 app.get('/chat', isAuthenticated, (req, res) => {
   res.render('chat', { username: req.session.username });
 });
-
 // ---------- SOCKET.IO: chat with reply and typing indicator support ----------
 const onlineUsers = new Set();
 const typingUsers = new Set();
@@ -225,13 +224,10 @@ io.on('connection', (socket) => {
 
   // send history to the newly connected socket
   Message.find().sort({ createdAt: 1 }).lean().then(msgs => {
-    // msgs already contain replyTo object (id, username, text) per model
     socket.emit('loadMessages', msgs);
   }).catch(err => console.error('load messages error:', err));
 
   // new message event (supports reply)
-  // expected data shape from client:
-  // { username: 'Aman', text: 'hello', replyTo: { id: '...', username: 'X', text: 'parent text' } } or replyTo: null
   socket.on('chatMessage', async (data) => {
     try {
       const replyObj = (data.replyTo && data.replyTo.id) ? {
@@ -248,8 +244,6 @@ io.on('connection', (socket) => {
 
       const saved = await msg.save();
 
-      // send saved message to all clients
-      // saved is a mongoose doc; convert to plain object for safety
       const out = {
         _id: String(saved._id),
         username: saved.username,
@@ -284,30 +278,28 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Typing indicator events
-  socket.on('typing', (data) => {
-    if (data.username && !typingUsers.has(data.username)) {
-      typingUsers.add(data.username);
-      socket.broadcast.emit('userTyping', data);
+  // Typing indicator events (fixed)
+  socket.on('typingStart', (username) => {
+    if (username) {
+      typingUsers.add(username);
+      io.emit('userTyping', Array.from(typingUsers));
     }
   });
 
-  socket.on('stopTyping', (data) => {
-    if (data.username && typingUsers.has(data.username)) {
-      typingUsers.delete(data.username);
-      socket.broadcast.emit('userStoppedTyping', data);
+  socket.on('typingStop', (username) => {
+    if (username && typingUsers.has(username)) {
+      typingUsers.delete(username);
+      io.emit('userTyping', Array.from(typingUsers));
     }
   });
 
   // disconnect
   socket.on('disconnect', () => {
-    // Remove user from typing list
     if (socket.username && typingUsers.has(socket.username)) {
       typingUsers.delete(socket.username);
-      socket.broadcast.emit('userStoppedTyping', { username: socket.username });
+      io.emit('userTyping', Array.from(typingUsers));
     }
-    
-    // Remove user from online list
+
     if (socket.username) {
       onlineUsers.delete(socket.username);
       io.emit('updateUsers', Array.from(onlineUsers));

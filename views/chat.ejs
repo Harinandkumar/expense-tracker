@@ -127,6 +127,7 @@
       display: flex;
       flex-direction: column;
       gap: 1.5em;
+      position: relative;
     }
     
     /* Message containers */
@@ -423,9 +424,11 @@
       font-size: 0.875rem;
     }
     
-    /* Typing indicator styles */
+    /* Typing indicator styles - POSITIONED AT BOTTOM */
     .typing-indicator {
-      padding: 0.5em 0.75em;
+      position: sticky;
+      bottom: 0;
+      padding: 0.75em 1em;
       margin: 0.5em 0;
       font-size: 0.8125rem;
       color: #54595d;
@@ -433,7 +436,14 @@
       display: flex;
       align-items: center;
       gap: 0.5em;
-      border-bottom: 1px solid #eaecf0;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      border: 1px solid #eaecf0;
+      width: fit-content;
+      max-width: 80%;
+      align-self: flex-start;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 10;
     }
     
     .typing-dots {
@@ -442,10 +452,10 @@
     }
     
     .typing-dot {
-      width: 0.4em;
-      height: 0.4em;
+      width: 0.5em;
+      height: 0.5em;
       border-radius: 50%;
-      background-color: #72777d;
+      background-color: #3366cc;
       animation: typingAnimation 1.4s infinite ease-in-out;
     }
     
@@ -464,9 +474,11 @@
     @keyframes typingAnimation {
       0%, 60%, 100% {
         transform: translateY(0);
+        opacity: 0.6;
       }
       30% {
         transform: translateY(-0.3em);
+        opacity: 1;
       }
     }
   </style>
@@ -494,14 +506,22 @@
     <div class="chat-main">
       <div class="chat-messages" id="messages">
         <div class="discussion-heading">Discussion page</div>
+        <!-- Messages will be added here -->
       </div>
 
       <div class="chat-users">
         <h3>Active contributors</h3>
         <ul id="users"></ul>
-        
-        <!-- Typing indicators will be added here -->
-        <div id="typing-indicators"></div>
+      </div>
+    </div>
+
+    <!-- Typing indicator positioned at the bottom -->
+    <div id="typing-indicator" class="typing-indicator" style="display: none;">
+      <span id="typing-text"></span>
+      <div class="typing-dots">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
       </div>
     </div>
 
@@ -532,11 +552,13 @@
   const replyIndicator = document.getElementById('replyIndicator');
   const replyingToSpan = document.querySelector('.replying-to');
   const cancelReplyBtn = document.querySelector('.cancel-reply');
-  const typingIndicatorsContainer = document.getElementById('typing-indicators');
+  const typingIndicator = document.getElementById('typing-indicator');
+  const typingText = document.getElementById('typing-text');
 
   let replyingToMessage = null;
   let typingTimeout;
   let isTyping = false;
+  let typingUsers = [];
 
   function formatTime(date) {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -597,17 +619,18 @@
     
     const note = document.createElement('div');
     note.className = 'message-container receiver';
-    note.innerHTML = `<div class="chat-bubble receiver"><b>System</b> Discussion was purged by a moderator</div>`;
+    note.innerHTML = `<div class='chat-bubble receiver'><b>System</b> Discussion was purged by a moderator</div>`;
     messages.appendChild(note);
     cancelReply();
   });
 
-  // Typing indicator events - FIXED TO MATCH SERVER
+  // Typing indicator events
   socket.on('userTyping', (users) => {
-    updateTypingIndicators(users);
+    typingUsers = users.filter(user => user !== username);
+    updateTypingIndicator();
   });
 
-  // Handle typing events - FIXED TO MATCH SERVER
+  // Handle typing events
   input.addEventListener('input', () => {
     if (!isTyping) {
       isTyping = true;
@@ -622,27 +645,18 @@
   });
 
   // Update typing indicator UI
-  function updateTypingIndicators(users) {
-    // Clear existing indicators
-    typingIndicatorsContainer.innerHTML = '';
-    
-    // Filter out current user and create indicators for others
-    const otherUsers = users.filter(user => user !== username);
-    
-    if (otherUsers.length > 0) {
-      otherUsers.forEach(user => {
-        const indicator = document.createElement('div');
-        indicator.className = 'typing-indicator';
-        indicator.innerHTML = `
-          <span>${escapeHtml(user)} is typing</span>
-          <div class="typing-dots">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-        `;
-        typingIndicatorsContainer.appendChild(indicator);
-      });
+  function updateTypingIndicator() {
+    if (typingUsers.length > 0) {
+      if (typingUsers.length === 1) {
+        typingText.textContent = `${typingUsers[0]} is typing`;
+      } else if (typingUsers.length === 2) {
+        typingText.textContent = `${typingUsers[0]} and ${typingUsers[1]} are typing`;
+      } else {
+        typingText.textContent = `${typingUsers[0]} and ${typingUsers.length - 1} others are typing`;
+      }
+      typingIndicator.style.display = 'flex';
+    } else {
+      typingIndicator.style.display = 'none';
     }
   }
 
