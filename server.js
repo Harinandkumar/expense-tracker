@@ -306,6 +306,85 @@ io.on('connection', (socket) => {
     }
     console.log('Socket disconnected:', socket.id);
   });
+
+
+  // Add inside io.on('connection', (socket) => { ... })
+
+// Edit message (only author allowed)
+socket.on('editMessage', async (data) => {
+  // data: { id: 'messageId', newText: 'edited text', username: 'Aman' }
+  try {
+    if (!data || !data.id || typeof data.newText !== 'string') return;
+
+    const msg = await Message.findById(data.id);
+    if (!msg) return;
+
+    // permission check: only original author can edit
+    if (String(msg.username) !== String(data.username)) {
+      console.warn(`Edit denied: ${data.username} trying to edit ${msg.username}'s message`);
+      return;
+    }
+
+    // update
+    msg.text = data.newText;
+    msg.edited = true;
+    await msg.save();
+
+    const out = {
+      _id: String(msg._id),
+      username: msg.username,
+      text: msg.text,
+      replyTo: msg.replyTo || null,
+      createdAt: msg.createdAt,
+      edited: msg.edited
+    };
+
+    // broadcast edited message to everyone
+    io.emit('messageEdited', out);
+  } catch (err) {
+    console.error('editMessage error:', err);
+  }
+});
+
+
+// ---------- Emoji reactions ----------
+socket.on('addReaction', async (data) => {
+  // data: { messageId, emoji, username }
+  try {
+    const msg = await Message.findById(data.messageId);
+    if(!msg) return;
+
+    // check if user already reacted with same emoji
+    const existing = msg.reactions.find(r => r.username === data.username && r.emoji === data.emoji);
+    if(existing) return; // avoid duplicate
+
+    msg.reactions.push({ emoji: data.emoji, username: data.username });
+    await msg.save();
+
+    // broadcast updated reactions
+    io.emit('updateReactions', { messageId: msg._id, reactions: msg.reactions });
+  } catch(err) {
+    console.error('addReaction error:', err);
+  }
+});
+
+socket.on('removeReaction', async (data) => {
+  // data: { messageId, emoji, username }
+  try {
+    const msg = await Message.findById(data.messageId);
+    if(!msg) return;
+
+    msg.reactions = msg.reactions.filter(r => !(r.username === data.username && r.emoji === data.emoji));
+    await msg.save();
+
+    io.emit('updateReactions', { messageId: msg._id, reactions: msg.reactions });
+  } catch(err) {
+    console.error('removeReaction error:', err);
+  }
+});
+
+
+
 });
 
 // ---------- Start server ----------

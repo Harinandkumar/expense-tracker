@@ -110,6 +110,9 @@
       background: white;
       width: 100%;
     }
+.typing-indicator, #replyIndicator {
+  z-index: 1000;
+}
 
     /* Wikipedia-style content area */
     .chat-main { 
@@ -481,6 +484,48 @@
         opacity: 1;
       }
     }
+
+
+    .reaction-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-left: 4px;
+  font-size: smaller;
+  font-style: italic;
+  border: 1px solid red;
+  padding: 1px;
+  border-radius: 9px;
+  background-color: #e60b95;
+  color: white;
+}
+
+.emoji-picker {
+  display: none; /* hidden by default */
+  position: absolute;
+  background: white;
+  border: 1px solid var(--wikipedia-border);
+  border-radius: 4px;
+  padding: 4px;
+  flex-wrap: wrap;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  z-index: 1000;
+  max-width: 200px;
+}
+
+.emoji-picker span {
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px;
+  border-radius: 3px;
+}
+
+.emoji-picker span:hover {
+  background: var(--wikipedia-light-blue);
+}
+
   </style>
 </head>
 <body>
@@ -539,214 +584,307 @@
       </button>
     </form>
   </div>
-
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  const socket = io();
-  const username = "<%= username %>";
-  const messages = document.getElementById('messages');
-  const usersList = document.getElementById('users');
-  const form = document.getElementById('chatForm');
-  const input = document.getElementById('msg');
-  const deleteAllBtn = document.getElementById('deleteAllBtn');
-  const replyIndicator = document.getElementById('replyIndicator');
-  const replyingToSpan = document.querySelector('.replying-to');
-  const cancelReplyBtn = document.querySelector('.cancel-reply');
-  const typingIndicator = document.getElementById('typing-indicator');
-  const typingText = document.getElementById('typing-text');
+const socket = io();
+const username = "<%= username %>";
+const messages = document.getElementById('messages');
+const usersList = document.getElementById('users');
+const form = document.getElementById('chatForm');
+const input = document.getElementById('msg');
+const deleteAllBtn = document.getElementById('deleteAllBtn');
+const replyIndicator = document.getElementById('replyIndicator');
+const replyingToSpan = document.querySelector('.replying-to');
+const cancelReplyBtn = document.querySelector('.cancel-reply');
+const typingIndicator = document.getElementById('typing-indicator');
+const typingText = document.getElementById('typing-text');
 
-  let replyingToMessage = null;
-  let typingTimeout;
-  let isTyping = false;
-  let typingUsers = [];
+let replyingToMessage = null;
+let typingTimeout;
+let isTyping = false;
+let typingUsers = [];
+let editingMessageId = null;
+let originalMessageText = '';
 
-  function formatTime(date) {
-    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
+function formatTime(date) {
+  return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-  // join
-  socket.emit('joinChat', username);
+socket.emit('joinChat', username);
 
-  // load old messages
-  socket.on('loadMessages', msgs => {
-    // Remove the initial heading if we have messages
-    if (msgs.length > 0) {
-      const heading = document.querySelector('.discussion-heading');
-      if (heading) heading.remove();
-    }
-    
-    msgs.forEach(m => appendMessage(m));
-  });
-
-  // new incoming
-  socket.on('newMessage', m => {
-    // Remove the initial heading when first message arrives
+socket.on('loadMessages', msgs => {
+  if (msgs.length > 0) {
     const heading = document.querySelector('.discussion-heading');
     if (heading) heading.remove();
-    
-    appendMessage(m);
+  }
+  msgs.forEach(m => appendMessage(m));
+});
+
+socket.on('newMessage', m => {
+  const heading = document.querySelector('.discussion-heading');
+  if (heading) heading.remove();
+  appendMessage(m);
+});
+
+socket.on('updateUsers', users => {
+  usersList.innerHTML = '';
+  users.forEach(u => {
+    const li = document.createElement('li');
+    li.textContent = u;
+    usersList.appendChild(li);
   });
+});
 
-  // update users
-  socket.on('updateUsers', users => {
-    usersList.innerHTML = '';
-    users.forEach(u => {
-      const li = document.createElement('li');
-      li.textContent = u;
-      usersList.appendChild(li);
-    });
-  });
+socket.on('messageDeleted', id => {
+  const el = document.getElementById(id);
+  if(el) {
+    el.style.opacity = '0';
+    setTimeout(()=> el.remove(), 300);
+  }
+  if(replyingToMessage && replyingToMessage._id === id) cancelReply();
+  if(editingMessageId === id) { editingMessageId = null; input.value = ''; }
+});
 
-  // message deleted
-  socket.on('messageDeleted', id => {
-    const el = document.getElementById(id);
-    if(el) {
-      el.style.opacity = '0';
-      setTimeout(()=> el.remove(), 300);
-    }
-    if(replyingToMessage && replyingToMessage._id === id) cancelReply();
-  });
+socket.on('allMessagesDeleted', () => {
+  messages.innerHTML = '';
+  const heading = document.createElement('div');
+  heading.className = 'discussion-heading';
+  heading.textContent = 'Discussion page';
+  messages.appendChild(heading);
 
-  // all messages deleted
-  socket.on('allMessagesDeleted', () => {
-    messages.innerHTML = '';
-    
-    // Add the heading back when all messages are deleted
-    const heading = document.createElement('div');
-    heading.className = 'discussion-heading';
-    heading.textContent = 'Discussion page';
-    messages.appendChild(heading);
-    
-    const note = document.createElement('div');
-    note.className = 'message-container receiver';
-    note.innerHTML = `<div class='chat-bubble receiver'><b>System</b> Discussion was purged by a moderator</div>`;
-    messages.appendChild(note);
-    cancelReply();
-  });
+  const note = document.createElement('div');
+  note.className = 'message-container receiver';
+  note.innerHTML = `<div class='chat-bubble receiver'><b>System</b> Discussion was purged by a moderator</div>`;
+  messages.appendChild(note);
+  cancelReply();
+  editingMessageId = null;
+  input.value = '';
+});
 
-  // Typing indicator events
-  socket.on('userTyping', (users) => {
-    typingUsers = users.filter(user => user !== username);
-    updateTypingIndicator();
-  });
+socket.on('userTyping', (users) => {
+  typingUsers = users.filter(user => user !== username);
+  updateTypingIndicator();
+});
 
-  // Handle typing events
-  input.addEventListener('input', () => {
-    if (!isTyping) {
-      isTyping = true;
-      socket.emit('typingStart', username);
-    }
+socket.on('messageEdited', (m) => {
+  const container = document.getElementById(m._id);
+  if (!container) return;
+  const bubble = container.querySelector('.chat-bubble');
+  if (!bubble) return;
 
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
-      isTyping = false;
-      socket.emit('typingStop', username);
-    }, 1000);
-  });
-
-  // Update typing indicator UI
-  function updateTypingIndicator() {
-    if (typingUsers.length > 0) {
-      if (typingUsers.length === 1) {
-        typingText.textContent = `${typingUsers[0]} is typing`;
-      } else if (typingUsers.length === 2) {
-        typingText.textContent = `${typingUsers[0]} and ${typingUsers[1]} are typing`;
-      } else {
-        typingText.textContent = `${typingUsers[0]} and ${typingUsers.length - 1} others are typing`;
-      }
-      typingIndicator.style.display = 'flex';
-    } else {
-      typingIndicator.style.display = 'none';
-    }
+  let content = escapeHtml(m.text || '');
+  if (m.replyTo && m.replyTo.id) {
+    const quoted = `<div class="quoted-message">In reply to ${escapeHtml(m.replyTo.username)}: ${escapeHtml(m.replyTo.text)}</div>`;
+    content = quoted + content;
   }
 
-  // send (with reply support)
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if(!text) return;
-    
-    // Stop typing when sending a message
+  const editedTag = `<span class="edited-tag" style="font-size:0.75rem;color:#6b6f76;margin-left:6px;">(edited)</span>`;
+  const delBtnHtml = bubble.querySelector('.delBtn') ? bubble.querySelector('.delBtn').outerHTML : '';
+  
+  bubble.innerHTML = `${content}${delBtnHtml}`;
+
+  const info = container.querySelector('.message-info .message-time');
+  if (info) {
+    const parentSpan = info.parentElement;
+    if (parentSpan && !parentSpan.querySelector('.edited-tag')) {
+      parentSpan.insertAdjacentHTML('beforeend', editedTag);
+    }
+  }
+});
+
+socket.on('updateReactions', data => {
+  const container = document.getElementById(`reactions-${data.messageId}`);
+  if(!container) return;
+  container.innerHTML = (data.reactions || []).map(r => `<span class="reaction">${r.emoji}</span>`).join('');
+});
+
+input.addEventListener('input', () => {
+  if (!isTyping) {
+    isTyping = true;
+    socket.emit('typingStart', username);
+  }
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
     isTyping = false;
     socket.emit('typingStop', username);
-    clearTimeout(typingTimeout);
-    
-    const payload = {
-      username,
-      text,
-      replyTo: replyingToMessage ? { id: replyingToMessage._id, username: replyingToMessage.username, text: replyingToMessage.text } : null
-    };
-    socket.emit('chatMessage', payload);
-    input.value = '';
-    cancelReply();
-  });
+  }, 1000);
+});
 
-  // delete all
-  deleteAllBtn.addEventListener('click', () => {
-    if(confirm('Purge all messages from this discussion?')) socket.emit('deleteAllMessages');
-  });
-
-  cancelReplyBtn.addEventListener('click', cancelReply);
-
-  function cancelReply(){
-    replyingToMessage = null;
-    replyIndicator.style.display = 'none';
-  }
-
-  window.setupReply = function(data){
-    // data passed as JS object (from onclick)
-    replyingToMessage = data;
-    replyingToSpan.textContent = data.username;
-    replyIndicator.style.display = 'block';
-    input.focus();
-  };
-
-  window.deleteMsg = function(id){
-    if(confirm('Delete this message from the discussion?')) socket.emit('deleteMessage', id);
-  };
-
-  // helper - escape HTML
-  function escapeHtml(s){
-    if(typeof s !== 'string') return s;
-    return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
-  }
-
-  function appendMessage(m){
-    // m expected shape: {_id, username, text, replyTo: {id, username, text} | null, createdAt}
-    const isMe = m.username === username;
-    const container = document.createElement('div');
-    container.className = `message-container ${isMe ? 'sender' : 'receiver'}`;
-    container.id = m._id;
-
-    const bubble = document.createElement('div');
-    bubble.className = `chat-bubble ${isMe ? 'sender' : 'receiver'}`;
-
-    // reply block
-    let content = escapeHtml(m.text || '');
-    if (m.replyTo && m.replyTo.id) {
-      const quoted = `<div class="quoted-message">In reply to ${escapeHtml(m.replyTo.username)}: ${escapeHtml(m.replyTo.text)}</div>`;
-      content = quoted + content;
+function updateTypingIndicator() {
+  if (typingUsers.length > 0) {
+    if (typingUsers.length === 1) {
+      typingText.textContent = `${typingUsers[0]} is typing`;
+    } else if (typingUsers.length === 2) {
+      typingText.textContent = `${typingUsers[0]} and ${typingUsers[1]} are typing`;
+    } else {
+      typingText.textContent = `${typingUsers[0]} and ${typingUsers.length - 1} others are typing`;
     }
-
-    bubble.innerHTML = `${content}
-      <button class="delBtn" onclick="deleteMsg('${m._id}')" title="Delete message"><i class="fas fa-times"></i></button>
-    `;
-
-    const info = document.createElement('div');
-    info.className = 'message-info';
-    info.innerHTML = `
-      <span class="message-sender">${escapeHtml(m.username)}</span>
-      <span>
-        <span class="message-time">${formatTime(m.createdAt || Date.now())}</span>
-        <button class="reply-btn" onclick='window.setupReply(${JSON.stringify({ _id: m._id, username: m.username, text: m.text })})' title="Reply to this message"><i class="fas fa-reply"></i> Reply</button>
-      </span>
-    `;
-
-    container.appendChild(bubble);
-    container.appendChild(info);
-    messages.appendChild(container);
-    messages.scrollTop = messages.scrollHeight;
+    typingIndicator.style.display = 'flex';
+  } else {
+    typingIndicator.style.display = 'none';
   }
+}
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if(!text) return;
+
+  if (editingMessageId) {
+    socket.emit('editMessage', { id: editingMessageId, newText: text, username });
+    editingMessageId = null;
+    originalMessageText = '';
+    input.value = '';
+    const btn = form.querySelector('button');
+    if (btn) btn.innerHTML = `<i class="fas fa-pencil-alt"></i> Post comment`;
+    return;
+  }
+
+  isTyping = false;
+  socket.emit('typingStop', username);
+  clearTimeout(typingTimeout);
+
+  const payload = {
+    username,
+    text,
+    replyTo: replyingToMessage ? { id: replyingToMessage._id, username: replyingToMessage.username, text: replyingToMessage.text } : null
+  };
+  socket.emit('chatMessage', payload);
+  input.value = '';
+  cancelReply();
+});
+
+deleteAllBtn.addEventListener('click', () => {
+  if(confirm('Purge all messages from this discussion?')) socket.emit('deleteAllMessages');
+});
+
+cancelReplyBtn.addEventListener('click', cancelReply);
+function cancelReply(){
+  replyingToMessage = null;
+  replyIndicator.style.display = 'none';
+}
+
+window.startEdit = function(id, text){
+  editingMessageId = id;
+  originalMessageText = text;
+  input.value = text;
+  input.focus();
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const btn = form.querySelector('button');
+  if (btn) btn.innerHTML = `<i class="fas fa-save"></i> Save`;
+  replyIndicator.style.display = 'none';
+};
+
+window.setupReply = function(data){
+  replyingToMessage = data;
+  replyingToSpan.textContent = data.username;
+  replyIndicator.style.display = 'block';
+  input.focus();
+};
+
+window.deleteMsg = function(id){
+  if(confirm('Delete this message from the discussion?')) socket.emit('deleteMessage', id);
+};
+
+function escapeHtml(s){
+  if(typeof s !== 'string') return s;
+  return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
+}
+
+function appendMessage(m) {
+  const isMe = m.username === username;
+  const container = document.createElement('div');
+  container.className = `message-container ${isMe ? 'sender' : 'receiver'}`;
+  container.id = m._id;
+
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${isMe ? 'sender' : 'receiver'}`;
+
+  let content = escapeHtml(m.text || '');
+  if (m.replyTo && m.replyTo.id) {
+    const quoted = `<div class="quoted-message">In reply to ${escapeHtml(m.replyTo.username)}: ${escapeHtml(m.replyTo.text)}</div>`;
+    content = quoted + content;
+  }
+
+  bubble.innerHTML = `${content}
+    <button class="delBtn" onclick="deleteMsg('${m._id}')" title="Delete message"><i class="fas fa-times"></i></button>
+  `;
+
+  // Reactions container
+  const reactionsHtml = `<div class="reactions" id="reactions-${m._id}" style="margin-top:4px; display:flex; gap:4px;"></div>`;
+  bubble.innerHTML += reactionsHtml;
+
+  // ===== REACTION BUTTON + EMOJI PICKER (RESPONSIVE) =====
+  const reactionBtn = document.createElement('button');
+  reactionBtn.innerHTML = 'react';
+  reactionBtn.className = 'reaction-btn';
+  bubble.appendChild(reactionBtn);
+
+  const emojiPicker = document.createElement('div');
+  emojiPicker.className = 'emoji-picker';
+  emojiPicker.style.position = 'absolute';
+  emojiPicker.style.display = 'none';
+  emojiPicker.style.flexWrap = 'wrap';
+  emojiPicker.style.background = '#fff';
+  emojiPicker.style.border = '1px solid #ccc';
+  emojiPicker.style.padding = '4px';
+  emojiPicker.style.borderRadius = '8px';
+  emojiPicker.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+  emojiPicker.style.zIndex = 1000;
+
+  const emojis = ['👍','❤️','😂','😮','😢','😡','🎉'];
+  emojis.forEach(emoji => {
+    const span = document.createElement('span');
+    span.textContent = emoji;
+    span.style.cursor = 'pointer';
+    span.style.fontSize = '1.2rem';
+    span.style.margin = '2px';
+    span.addEventListener('click', () => {
+      socket.emit('addReaction', { messageId: m._id, emoji, username });
+      emojiPicker.style.display = 'none';
+    });
+    emojiPicker.appendChild(span);
+  });
+
+  document.body.appendChild(emojiPicker);
+
+  reactionBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const rect = reactionBtn.getBoundingClientRect();
+    emojiPicker.style.top = window.scrollY + rect.top - emojiPicker.offsetHeight - 6 + 'px';
+    emojiPicker.style.left = window.scrollX + rect.left + 'px';
+    emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!emojiPicker.contains(e.target) && e.target !== reactionBtn) {
+      emojiPicker.style.display = 'none';
+    }
+  });
+
+  // Message info
+  const info = document.createElement('div');
+  info.className = 'message-info';
+  const editedHtml = m.edited ? `<span class="edited-tag" style="font-size:0.75rem;color:#6b6f76;margin-left:6px;">(edited)</span>` : '';
+  let rightPart = `
+    <span class="message-time">${formatTime(m.createdAt || Date.now())}</span>
+    ${editedHtml}
+    <button class="reply-btn" onclick='window.setupReply(${JSON.stringify({ _id: m._id, username: m.username, text: m.text })})' title="Reply to this message"><i class="fas fa-reply"></i> Reply</button>
+  `;
+  if (isMe) {
+    rightPart += ` <button class="reply-btn" onclick="window.startEdit('${m._id}', '${m.text.replace(/'/g, "\\'").replace(/\n/g,'\\n')}')" title="Edit message"><i class="fas fa-edit"></i> Edit</button>`;
+  }
+  info.innerHTML = `<span class="message-sender">${escapeHtml(m.username)}</span><span>${rightPart}</span>`;
+
+  container.appendChild(bubble);
+  container.appendChild(info);
+  messages.appendChild(container);
+  messages.scrollTop = messages.scrollHeight;
+}
 </script>
+
+
+
 </body>
 </html>
