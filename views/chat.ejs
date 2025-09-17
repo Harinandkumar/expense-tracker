@@ -539,6 +539,10 @@
         <button id="deleteAllBtn" class="delete-all">
           <i class="fas fa-trash-alt"></i> Purge
         </button>
+        <button id="notifyBtn" title="Send Alert">
+  <i class="fas fa-bell"></i>
+</button>
+
         <a href="/dashboard" class="small-btn">
           <i class="fas fa-chart-line"></i> Dashboard
         </a>
@@ -576,6 +580,9 @@
       </div>
       <a class="cancel-reply">Cancel</a>
     </div>
+
+
+
 
     <form id="chatForm" class="chat-form">
       <input id="msg" autocomplete="off" placeholder="Contribute to the discussion..." />
@@ -882,6 +889,21 @@ function appendMessage(m) {
   messages.appendChild(container);
   messages.scrollTop = messages.scrollHeight;
 }
+
+
+// Bell button notification
+const notifyBtn = document.getElementById('notifyBtn');
+if (notifyBtn) {
+  notifyBtn.addEventListener('click', () => {
+    socket.emit('sendTelegramAlert', {
+      username,
+      message: `${username} pressed the 🔔 bell in chat`
+    });
+    alert("Notification sent to Telegram!");
+  });
+}
+
+
 </script>
 
 

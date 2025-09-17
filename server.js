@@ -1,4 +1,23 @@
 // server.js
+const axios = require("axios");
+
+// Telegram notification helper
+async function sendTelegramNotification(message) {
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const CHAT_ID = process.env.CHAT_ID;
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  try {
+    await axios.post(url, { chat_id: CHAT_ID, text: message });
+  } catch (err) {
+    console.error("Telegram Error:", err.message);
+  }
+}
+
+
+
+
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -383,6 +402,16 @@ socket.on('removeReaction', async (data) => {
   }
 });
 
+// Telegram bell notification
+socket.on("sendTelegramAlert", async (data) => {
+  try {
+    const msg = `🔔 User ${data.username} clicked bell!\nMessage: ${data.message}`;
+    await sendTelegramNotification(msg);
+    console.log("Telegram alert sent:", msg);
+  } catch (err) {
+    console.error("Telegram alert error:", err);
+  }
+});
 
 
 });
