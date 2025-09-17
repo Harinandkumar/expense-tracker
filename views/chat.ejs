@@ -539,9 +539,9 @@
         <button id="deleteAllBtn" class="delete-all">
           <i class="fas fa-trash-alt"></i> Purge
         </button>
-        <button id="notifyBtn" title="Send Alert">
-  <i class="fas fa-bell"></i>
-</button>
+      <input type="text" id="bellMessage" placeholder="Notify admin..." />
+<button id="bellBtn">🔔</button>
+
 
         <a href="/dashboard" class="small-btn">
           <i class="fas fa-chart-line"></i> Dashboard
@@ -901,7 +901,29 @@ if (notifyBtn) {
     });
     alert("Notification sent to Telegram!");
   });
+
+
+  
 }
+// ---------- Bell button click - send custom message ----------
+const bellBtn = document.getElementById('bellBtn');
+const bellMessageInput = document.getElementById('bellMessage');
+
+bellBtn.addEventListener('click', () => {
+  const message = bellMessageInput.value.trim() || "🔔 Bell pressed!";
+
+  // Send message to server via socket
+  socket.emit('sendTelegramAlert', {
+    username,
+    message
+  });
+
+  // Clear input field
+  bellMessageInput.value = '';
+
+  // Optional: show small alert in browser
+  alert("Bell message sent!");
+});
 
 
 </script>
