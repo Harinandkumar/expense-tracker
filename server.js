@@ -68,7 +68,15 @@ function isAuthenticated(req, res, next) {
 }
 
 // ---------- Routes: auth, dashboard, expenses ----------
-app.get('/', (req, res) => res.redirect('/login'));
+// Home page
+app.get('/', (req, res) => {
+  if (req.session && req.session.userId) {
+    res.redirect('/dashboard'); 
+  } else {
+    res.render('home'); 
+  }
+});
+
 
 // ---------- Auth Routes ----------
 
@@ -423,3 +431,11 @@ socket.on("sendTelegramAlert", async (data) => {
 // ---------- Start server ----------
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+
+
+// const path = require('path');
+
+// sitemap.xml serve
+app.get('/sitemap.xml', (req, res) => {
+  res.sendFile(path.join(__dirname, 'sitemap.xml'));
+});

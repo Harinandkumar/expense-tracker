@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Expense Tracker - Manage Your Finances</title>
+  
+  <!-- ✅ SEO Meta Tags -->
+  <meta name="description" content="Smart Expense Tracker - Track, Manage & Analyze your daily expenses. Secure login, category tracking & monthly insights. Developed by Harinand Kumar.">
+  <meta name="keywords" content="Expense Tracker, Money Management, Budget Planner, Finance App, Harinand Kumar,Smart Expense Tracker">
+  <meta name="author" content="Harinand Kumar">
+
+  <!-- ✅ Open Graph for Social Media -->
+  <meta property="og:title" content="Expense Tracker - Harinand Kumar">
+  <meta property="og:description" content="Track your expenses, manage categories & get insights.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://harinand.xyz/">
+  <meta property="og:image" content="/images/preview.png">
+
+  <!-- Responsive -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- ✅ Dark Mode Toggle -->
+  <button id="theme-toggle" class="theme-toggle">
+    <i class="fas fa-moon"></i>
+  </button>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content animate-fade">
+      <h1>💰 Smart Expense Tracker</h1>
+      <p>Track your spending. Control your future. 🚀</p>
+      <div class="buttons">
+        <a href="/login" class="btn primary"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <a href="/register" class="btn secondary"><i class="fas fa-user-plus"></i> Register</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <h2 class="animate-slide">✨ Why Use Expense Tracker?</h2>
+    <div class="feature-list">
+      <div class="feature-card animate-zoom">
+        <i class="fas fa-chart-pie fa-2x icon"></i>
+        <h3>Dashboard</h3>
+        <p>See all your expenses in one place with clean tables & charts.</p>
+      </div>
+      <div class="feature-card animate-zoom">
+        <i class="fas fa-tags fa-2x icon"></i>
+        <h3>Category Tracking</h3>
+        <p>Know where your money goes – food, travel, shopping & more.</p>
+      </div>
+      <div class="feature-card animate-zoom">
+        <i class="fas fa-calendar-alt fa-2x icon"></i>
+        <h3>Monthly Insights</h3>
+        <p>Compare spending month-by-month and take better decisions.</p>
+      </div>
+      <div class="feature-card animate-zoom">
+        <i class="fas fa-lock fa-2x icon"></i>
+        <h3>Secure Login</h3>
+        <p>Data safety with encrypted passwords & session security.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Motivation -->
+  <section class="motivation animate-fade">
+    <blockquote>
+      "Every rupee saved is a step closer to your dreams.  
+      Start tracking today, achieve tomorrow. 🌟"
+    </blockquote>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>🚀 Developed by <strong>Harinand Kumar</strong></p>
+  </footer>
+
+  <!-- ✅ Dark Mode Script -->
+  <script>
+    const toggleBtn = document.getElementById("theme-toggle");
+    toggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      const icon = toggleBtn.querySelector("i");
+      if (document.body.classList.contains("dark-mode")) {
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
+      } else {
+        icon.classList.remove("fa-sun");
+        icon.classList.add("fa-moon");
+      }
+    });
+  </script>
+</body>
+</html>
